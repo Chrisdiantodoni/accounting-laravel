@@ -222,15 +222,17 @@ class LedgerController extends Controller
             $ledgers = Ledger::query()
                 ->with(['child_account.parent_account'])
                 ->where('location_id', $selectedLocations->id)
-                ->whereHas('child_account.parent_account', function ($query) use ($type) {
-                    $query->whereIn('id', function ($sub) use ($type) {
-                        $sub->select('parent_accounts.id')
-                            ->from('parent_accounts')
-                            ->join('coa_groups', function ($join) {
-                                $join->on('parent_accounts.parent_account_code', '>=', 'coa_groups.lower_account_code')
-                                    ->on('parent_accounts.parent_account_code', '<=', 'coa_groups.upper_account_code');
-                            })
-                            ->where('coa_groups.group_type', $type);
+                ->when($type, function ($query) use ($type) {
+                    $query->whereHas('child_account.parent_account', function ($query) use ($type) {
+                        $query->whereIn('id', function ($sub) use ($type) {
+                            $sub->select('parent_accounts.id')
+                                ->from('parent_accounts')
+                                ->join('coa_groups', function ($join) {
+                                    $join->on('parent_accounts.parent_account_code', '>=', 'coa_groups.lower_account_code')
+                                        ->on('parent_accounts.parent_account_code', '<=', 'coa_groups.upper_account_code');
+                                })
+                                ->where('coa_groups.group_type', $type);
+                        });
                     });
                 })
                 ->when($q, function ($query) use ($q) {

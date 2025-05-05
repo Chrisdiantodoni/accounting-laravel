@@ -14,4 +14,8 @@ class OtherCost extends Model
     {
         return $this->belongsToMany(Ledger::class, 'other_cost_ledgers', 'other_cost_id', 'ledger_id');
     }
+    public function profit_loss()
+    {
+        return $this->belongsTo(ProfitLossStatement::class, 'profit_loss_statements_id');
+    }
 }

@@ -9,7 +9,9 @@ use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ParentAccountController;
 use App\Http\Controllers\ProfitLossStatementController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\YearController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,6 +25,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/list-users', [UserController::class, 'index'])->name('list.users');
     Route::get('/list-users/{id}', [UserController::class, 'show'])->name('show.user');
     Route::put('/edit-user/{id}', [UserController::class, 'editUser'])->name('edit.user');
+    Route::put('/change-year', [YearController::class, 'changeYear'])->name('change.year');
     Route::put('/change-location', [UserController::class, 'changeLocation'])->name('change.location');
     Route::post('/add-users', [UserController::class, 'storeUser'])->name('store.users');
     Route::put('/change-password', [UserController::class, 'changePassword'])->name('change.password');
@@ -45,6 +48,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/close-book', [ClosingController::class, 'closingBookList'])->name('list.close.book');
     });
 
+    Route::prefix('reports')->group(function () {
+        Route::get('/profit-loss', [ReportController::class, 'profitLossReports'])->name('reports.profit.loss');
+        Route::get('/balance-sheet', [ReportController::class, 'balanceSheetReports'])->name('reports.balance.sheet');
+
+        Route::post('/closing', [ClosingController::class, 'closeBook'])->name('close.book');
+        Route::post('/open', [ClosingController::class, 'openBook'])->name('open.book');
+    });
 
     Route::prefix('close-book')->group(function () {
         Route::get('/location', [ClosingController::class, 'getLocationClosing'])->name('list.location.close.book');

@@ -45,7 +45,6 @@ class ParentAccountSeeder extends Seeder
             ['parent_account_code' => 605, 'parent_account_name' => 'Penjualan Pertamax TURBO'],
             ['parent_account_code' => 606, 'parent_account_name' => 'Penjualan Pertamina Dex'],
             ['parent_account_code' => 607, 'parent_account_name' => 'Penjualan Lain-lain'],
-            ['parent_account_code' => 608, 'parent_account_name' => 'Penjualan Bersih'],
 
             // Harga Pokok Penjualan
             ['parent_account_code' => 701, 'parent_account_name' => 'Pembelian Pertalite'],

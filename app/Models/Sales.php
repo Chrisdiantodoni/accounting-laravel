@@ -14,4 +14,9 @@ class Sales extends Model
     {
         return $this->belongsToMany(Ledger::class, 'sales_ledgers', 'sales_id', 'ledger_id');
     }
+
+    public function profit_loss()
+    {
+        return $this->belongsTo(ProfitLossStatement::class, 'profit_loss_statements_id');
+    }
 }

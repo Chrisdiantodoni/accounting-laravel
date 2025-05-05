@@ -37,13 +37,13 @@ export const menuItems = [
         child: [
             {
                 childtitle: "Laba Rugi",
-                childlink: route("list.entries"),
-                link: "list-entries",
+                childlink: route("reports.profit.loss"),
+                link: "reports/profit-loss",
             },
             {
                 childtitle: "Neraca",
-                childlink: route("list.entries"),
-                link: "list-entries",
+                childlink: route("reports.balance.sheet"),
+                link: "reports/balance-sheet",
             },
             {
                 childtitle: "Jurnal Historical",
@@ -92,7 +92,7 @@ export const menuItems = [
             {
                 childtitle: "Laba Rugi",
                 childlink: route("list.profitloss.statements"),
-                link: "master/list-profitloss/statements",
+                link: "master/list-profit-loss/statements",
             },
         ],
     },

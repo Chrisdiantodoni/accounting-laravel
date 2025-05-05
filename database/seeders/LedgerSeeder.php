@@ -65,7 +65,6 @@ class LedgerSeeder extends Seeder
             ['prefix' => 'Penjualan Pertamax TURBO', 'ledger_name' => 'Penjualan Pertamax TURBO'],
             ['prefix' => 'Penjualan Pertamina Dex', 'ledger_name' => 'Penjualan Pertamina Dex'],
             ['prefix' => 'Penjualan Lain-lain', 'ledger_name' => 'Penjualan Lain-lain'],
-            ['prefix' => 'Penjualan Bersih', 'ledger_name' => 'Penjualan Bersih'],
 
             // Harga Pokok Penjualan
             ['prefix' => 'Pembelian Pertalite', 'ledger_name' => 'Pembelian Pertalite'],

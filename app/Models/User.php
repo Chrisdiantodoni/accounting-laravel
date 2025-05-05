@@ -33,7 +33,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
 
-    protected $with = ['permissions', 'locations'];
+    protected $with = ['permissions', 'locations', 'years'];
     // protected $with = ['dealers', 'permissions'];
     protected $hidden = [
         'password',
@@ -53,6 +53,13 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Location::class, 'location_by_users', 'user_id', 'location_id')
             ->withPivot('isSelected', 'location_id')
+            ->withTimestamps(); // jika ada timestamps di tabel pivot
+    }
+
+    public function years()
+    {
+        return $this->belongsToMany(Year::class, 'year_by_users', 'user_id', 'year_id')
+            ->withPivot('isSelected', 'year_id')
             ->withTimestamps(); // jika ada timestamps di tabel pivot
     }
 

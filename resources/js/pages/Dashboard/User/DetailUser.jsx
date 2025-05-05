@@ -9,8 +9,9 @@ import { useEffect, useState } from "react";
 import { router, useForm } from "@inertiajs/react";
 import Badge from "@/components/ui/Badge";
 
-export default function DetailUser({ user, locations }) {
+export default function DetailUser({ user, locations, years }) {
     const [userLocation, setUserLocation] = useState([]);
+    const [userYear, setUserYear] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingReset, setIsLoadingReset] = useState(false);
 
@@ -26,6 +27,12 @@ export default function DetailUser({ user, locations }) {
             setUserLocation(
                 user?.locations.map((item) => ({
                     label: item.location_name,
+                    value: item,
+                })),
+            );
+            setUserYear(
+                user?.years.map((item) => ({
+                    label: item.year,
                     value: item,
                 })),
             );
@@ -63,6 +70,7 @@ export default function DetailUser({ user, locations }) {
             {
                 ...data,
                 locations: userLocation,
+                years: userYear,
             },
             {
                 onSuccess: (res) => {
@@ -150,6 +158,7 @@ export default function DetailUser({ user, locations }) {
                         <Textinput value={data.username} />
                     </p>
                 </div>
+
                 <div className="col-span-3">
                     <p className="detail-label">Dealer</p>
                 </div>
@@ -174,6 +183,33 @@ export default function DetailUser({ user, locations }) {
                                 }))}
                             value={userLocation}
                             onChange={(e) => setUserLocation(e)}
+                        />
+                    </p>
+                </div>
+                <div className="col-span-3">
+                    <p className="detail-label">Tahun</p>
+                </div>
+                <div className="col-span-9 flex items-center gap-2">
+                    <p className="detail-label hidden lg:block">:</p>
+                    <p className="detail-label w-full">
+                        <SelectComponent
+                            isMulti
+                            closeMenuOnSelect={false}
+                            options={years
+                                .filter(
+                                    (year) =>
+                                        !userYear?.some(
+                                            (selected) =>
+                                                selected?.value?.id ===
+                                                year?.id,
+                                        ),
+                                )
+                                .map((year) => ({
+                                    label: year?.year,
+                                    value: year, // value pakai ID saja
+                                }))}
+                            value={userYear}
+                            onChange={(e) => setUserYear(e)}
                         />
                     </p>
                 </div>

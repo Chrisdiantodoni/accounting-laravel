@@ -76,6 +76,7 @@ const SelectComponent = ({
                             value={value}
                             options={options}
                             styles={styles}
+                            menuPortalTarget={document.body}
                         />
                     )}
                 />
@@ -119,6 +120,7 @@ const SelectComponent = ({
                 onChange={onChange}
                 value={value}
                 options={options}
+                menuPortalTarget={document.body}
                 styles={{
                     ...stylesSelect,
                     ...styles,

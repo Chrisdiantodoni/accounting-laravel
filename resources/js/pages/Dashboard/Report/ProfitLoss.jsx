@@ -14,7 +14,7 @@ const schema = yup.object().shape({
     location: yup.object().nullable().required("Lokasi wajib dipilih"),
 });
 
-function BalanceSheet() {
+function ProfitLoss() {
     const { data, auth } = usePage().props;
     const [isLoading, setIsLoading] = useState(false);
     console.log({ data });
@@ -56,7 +56,7 @@ function BalanceSheet() {
 
     const getEntries = async (data) => {
         const response = await router.get(
-            route("reports.balance.sheet"),
+            route("reports.profit.loss"),
             {
                 location_id: data?.location?.value?.id,
                 year: yearUser,
@@ -81,8 +81,8 @@ function BalanceSheet() {
     };
 
     return (
-        <Card title={"Laporan Neraca"} noborder>
-            <Head title="Laporan Neraca" />
+        <Card title={"Laporan Laba Rugi"} noborder>
+            <Head title="Laporan Laba Rugi" />
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-3">
                     <SelectComponent
@@ -134,4 +134,4 @@ function BalanceSheet() {
     );
 }
 
-export default BalanceSheet;
+export default ProfitLoss;

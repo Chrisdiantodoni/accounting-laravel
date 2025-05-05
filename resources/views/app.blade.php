@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title inertia>{{ config('app.name', 'PT. Alfa Scorpii') }}</title>
+    <title inertia>{{ config('app.name', 'SPBU') }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -16,11 +16,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
         integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
         crossorigin="" />
-    <title>Alfa Scorpii MD</title>
+    <title>SPBU</title>
     <!-- Scripts -->
     @routes
     @viteReactRefresh
-    @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])
+    @vite(['resources/js/app.jsx'])
     @inertiaHead
 
 

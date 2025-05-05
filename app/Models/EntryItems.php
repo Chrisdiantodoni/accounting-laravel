@@ -14,6 +14,11 @@ class EntryItems extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
+
+    public function entry()
+    {
+        return $this->belongsTo(Entry::class, 'entries_id');
+    }
     public function ledger()
     {
         return $this->belongsTo(Ledger::class, 'ledger_id', 'id');

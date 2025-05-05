@@ -14,8 +14,9 @@ import Select from "react-select";
 const Sidebar = () => {
     const scrollableNodeRef = useRef();
     const [scroll, setScroll] = useState(false);
-    const { auth } = usePage().props;
+    const { auth, years } = usePage().props;
     const [selectLocation, setSelectLocation] = useState({});
+    const [selectYear, setSelectYear] = useState({});
 
     useEffect(() => {
         const handleScroll = () => {
@@ -35,6 +36,13 @@ const Sidebar = () => {
         setSelectLocation({
             label: selectedLocation?.location_name,
             value: selectedLocation,
+        });
+        const selectedYear = auth?.user?.years?.find(
+            (find) => find?.pivot?.isSelected == 1,
+        );
+        setSelectYear({
+            label: selectedYear?.year,
+            value: selectedYear,
         });
     }, []);
 
@@ -56,6 +64,36 @@ const Sidebar = () => {
                         setSelectLocation({
                             label: selectedLocation?.location_name,
                             value: selectedLocation,
+                        });
+                    }
+                },
+                onError: (err) => {
+                    console.error("Failed to change location", err);
+                },
+            },
+        );
+    };
+
+    const handleSelectYear = (e) => {
+        // console.log({ e });
+        // return;
+        router.put(
+            route("change.year"),
+            {
+                year: {
+                    id: e?.value?.id,
+                },
+            },
+            {
+                onSuccess: (res) => {
+                    if (res?.props.flash?.message?.message === "ok") {
+                        const selectedYear =
+                            res?.props?.auth?.user?.years?.find(
+                                (find) => find?.pivot?.isSelected == 1,
+                            );
+                        setSelectYear({
+                            label: selectedYear?.year,
+                            value: selectedYear,
                         });
                     }
                 },
@@ -118,6 +156,20 @@ const Sidebar = () => {
                             value={selectLocation}
                             onChange={handleSelectLocation}
                         />
+                    )}
+                    {(!collapsed || menuHover) && (
+                        <div className="mt-3">
+                            <Select
+                                className="react-select"
+                                classNamePrefix="select"
+                                options={years?.map((item) => ({
+                                    label: item?.year,
+                                    value: item,
+                                }))}
+                                value={selectYear}
+                                onChange={handleSelectYear}
+                            />
+                        </div>
                     )}
                     <Navmenu menus={menuItems} />
                     {/* {!collapsed && (

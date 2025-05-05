@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Location;
 use App\Models\LocationByUser;
 use App\Models\User;
+use App\Models\Year;
+use App\Models\YearByUser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,7 +60,8 @@ class UserController extends Controller
     {
         $user = User::findOrFail($user_id);
         $locations = Location::all();
-        return Inertia::render('Dashboard/User/DetailUser', compact('user', 'locations'));
+        $years = Year::all();
+        return Inertia::render('Dashboard/User/DetailUser', compact('user', 'locations', 'years'));
     }
 
     public function storeUser(Request $request)
@@ -184,6 +187,18 @@ class UserController extends Controller
                 'name' => $request->input('name'),
                 'username' => $request->input('username'),
             ]);
+            YearByUser::where('user_id', $id)->delete();
+            $years = $request->input('years');
+            foreach ($years as $i => $year) {
+                $yearValue = $year['value'];
+
+                YearByUser::create([
+                    'user_id' => $id,
+                    'year_id' => $yearValue['id'],
+                    'isSelected' => $i == 0,
+                ]);
+            }
+
             LocationByUser::where('user_id', $id)->delete();
             $locations = $request->input('locations');
             foreach ($locations as $i => $location) {

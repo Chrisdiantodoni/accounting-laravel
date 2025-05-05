@@ -53,7 +53,7 @@ class ProfitLossStatementController extends Controller
             $user = Auth::user();
             $selectedLocations = $user->locations
                 ->firstWhere('pivot.isSelected', true);
-            $profit_loss = ProfitLossStatement::where('location_id', $selectedLocations?->id);
+            $profit_loss = ProfitLossStatement::where('location_id', $selectedLocations?->id)->first();
             if ($profit_loss) {
                 $notification = array(
                     'type' => 'error',
@@ -94,10 +94,10 @@ class ProfitLossStatementController extends Controller
                 'location_id' => $selectedLocations->id
             ]);
             if ($sales) {
+                $newSale = Sales::create([
+                    'profit_loss_statements_id' => $profit_losses->id,
+                ]);
                 foreach ($sales as $sale) {
-                    $newSale = Sales::create([
-                        'profit_loss_statements_id' => $profit_losses->id,
-                    ]);
                     SalesLedger::create([
                         'sales_id' => $newSale->id,
                         'ledger_id' => $sale['ledger_id'], // pakai array access
@@ -105,10 +105,10 @@ class ProfitLossStatementController extends Controller
                 }
             }
             if ($costs) {
+                $newCost = Cost::create([
+                    'profit_loss_statements_id' => $profit_losses->id,
+                ]);
                 foreach ($costs as $cost) {
-                    $newCost = Cost::create([
-                        'profit_loss_statements_id' => $profit_losses->id,
-                    ]);
                     CostLedger::create([
                         'cost_id' => $newCost->id,
                         'ledger_id' => $cost['ledger_id'],
@@ -116,10 +116,10 @@ class ProfitLossStatementController extends Controller
                 }
             }
             if ($other_costs) {
+                $newOtherCost = OtherCost::create([
+                    'profit_loss_statements_id' => $profit_losses->id,
+                ]);
                 foreach ($other_costs as $other_cost) {
-                    $newOtherCost = OtherCost::create([
-                        'profit_loss_statements_id' => $profit_losses->id,
-                    ]);
                     OtherCostLedger::create([
                         'other_cost_id' => $newOtherCost->id,
                         'ledger_id' => $other_cost['ledger_id'],
@@ -127,10 +127,10 @@ class ProfitLossStatementController extends Controller
                 }
             }
             if ($cogs) {
+                $newCogs = Cogs::create([
+                    'profit_loss_statements_id' => $profit_losses->id,
+                ]);
                 foreach ($cogs as $cog) {
-                    $newCogs = Cogs::create([
-                        'profit_loss_statements_id' => $profit_losses->id,
-                    ]);
                     CogsLedger::create([
                         'cogs_id' => $newCogs->id,
                         'ledger_id' => $cog['ledger_id'],
@@ -138,10 +138,10 @@ class ProfitLossStatementController extends Controller
                 }
             }
             if ($revenues) {
+                $newRevenue = Revenue::create([
+                    'profit_loss_statements_id' => $profit_losses->id,
+                ]);
                 foreach ($revenues as $revenue) {
-                    $newRevenue = Revenue::create([
-                        'profit_loss_statements_id' => $profit_losses->id,
-                    ]);
                     RevenueLedger::create([
                         'revenue_id' => $newRevenue->id,
                         'ledger_id' => $revenue['ledger_id'],
@@ -214,50 +214,50 @@ class ProfitLossStatementController extends Controller
             // }
 
             // Simpan data baru
+            $newSale = Sales::create([
+                'profit_loss_statements_id' => $profit_losses->id,
+            ]);
             foreach ($request->sales as $sale) {
-                $newSale = Sales::create([
-                    'profit_loss_statements_id' => $profit_losses->id,
-                ]);
                 SalesLedger::create([
                     'sales_id' => $newSale->id,
                     'ledger_id' => $sale['ledger_id'],
                 ]);
             }
 
+            $newCost = Cost::create([
+                'profit_loss_statements_id' => $profit_losses->id,
+            ]);
             foreach ($request->costs as $cost) {
-                $newCost = Cost::create([
-                    'profit_loss_statements_id' => $profit_losses->id,
-                ]);
                 CostLedger::create([
                     'cost_id' => $newCost->id,
                     'ledger_id' => $cost['ledger_id'],
                 ]);
             }
 
+            $newOtherCost = OtherCost::create([
+                'profit_loss_statements_id' => $profit_losses->id,
+            ]);
             foreach ($request->other_costs as $other_cost) {
-                $newOtherCost = OtherCost::create([
-                    'profit_loss_statements_id' => $profit_losses->id,
-                ]);
                 OtherCostLedger::create([
                     'other_cost_id' => $newOtherCost->id,
                     'ledger_id' => $other_cost['ledger_id'],
                 ]);
             }
 
+            $newCogs = Cogs::create([
+                'profit_loss_statements_id' => $profit_losses->id,
+            ]);
             foreach ($request->cogs as $cog) {
-                $newCogs = Cogs::create([
-                    'profit_loss_statements_id' => $profit_losses->id,
-                ]);
                 CogsLedger::create([
                     'cogs_id' => $newCogs->id,
                     'ledger_id' => $cog['ledger_id'],
                 ]);
             }
 
+            $newRevenue = Revenue::create([
+                'profit_loss_statements_id' => $profit_losses->id,
+            ]);
             foreach ($request->revenues as $revenue) {
-                $newRevenue = Revenue::create([
-                    'profit_loss_statements_id' => $profit_losses->id,
-                ]);
                 RevenueLedger::create([
                     'revenue_id' => $newRevenue->id,
                     'ledger_id' => $revenue['ledger_id'],
