@@ -28,7 +28,9 @@ class ProfitLossStatementController extends Controller
         $page = $request->input('page');
         $profit_loss = ProfitLossStatement::with(['location'])
             ->when($q, function ($query) use ($q) {
-                $query->where('ledger_code', 'like', '%' . $q . '%');
+                $query->whereHas('location', function ($query) use ($q) {
+                    $query->where('location_name',  'like', '%' . $q . '%');
+                });
             })
             ->paginate($limit);
 

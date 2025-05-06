@@ -18,7 +18,12 @@ class CoaGroupController extends Controller
         $page = $request->input('page');
         $coa = CoaGroup::latest()
             ->when($q, function ($query) use ($q) {
-                $query->where('parent_account_name', 'like', '%' . $q . '%');
+                $query->where('group_code', 'like', '%' . $q . '%')
+                    ->orWhere('group_code', 'like', '%' . $q . '%')
+                    ->orWhere('group_description', 'like', '%' . $q . '%')
+                    ->orWhere('group_type', 'like', '%' . $q . '%')
+                    ->orWhere('upper_account_code', 'like', '%' . $q . '%')
+                    ->orWhere('lower_account_code', 'like', '%' . $q . '%');
             })
             ->paginate($limit);
         // $coa->getCollection()->transform(function ($item) {

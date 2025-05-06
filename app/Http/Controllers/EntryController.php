@@ -23,12 +23,16 @@ class EntryController extends Controller
         $limit = $request->input('limit') ?? 10;
         $page = $request->input('page');
         $user = Auth::user();
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         $selectedLocationId = $user->locations
             ->firstWhere('pivot.isSelected', true)?->id;
         $entries = Entry::with(['location'])->where('location_id', $selectedLocationId)
             ->where('status', 'create')
             ->when($q, function ($query) use ($q) {
-                $query->where('ledger_code', 'like', '%' . $q . '%');
+                $query->where('document_number',  'like', '%' . $q . '%');
+            })->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
             })
             ->paginate($limit);
 
@@ -47,12 +51,16 @@ class EntryController extends Controller
         $limit = $request->input('limit') ?? 10;
         $page = $request->input('page');
         $user = Auth::user();
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         $selectedLocationId = $user->locations
             ->firstWhere('pivot.isSelected', true)?->id;
         $postings = Entry::with(['location'])->where('location_id', $selectedLocationId)
             ->where('status', 'posting')
             ->when($q, function ($query) use ($q) {
-                $query->where('ledger_code', 'like', '%' . $q . '%');
+                $query->where('document_number',  'like', '%' . $q . '%');
+            })->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
             })
             ->paginate($limit);
 
