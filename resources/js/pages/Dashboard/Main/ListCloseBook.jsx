@@ -23,6 +23,10 @@ export default function ListCloseBook() {
         totalPage: 10,
     });
 
+    const ClosingBook = async () => {
+        await router.post(route("close.book"));
+    };
+
     const getEntries = async () => {
         const response = await router.get(
             route("list.close.book"),
@@ -102,7 +106,7 @@ export default function ListCloseBook() {
                         icon={"material-symbols:add"}
                         text={"Tutup Buku"}
                         className="btn-outline-dark p-2"
-                        link={route("add.entries")}
+                        onClick={ClosingBook}
                     />
                 </div>
             }

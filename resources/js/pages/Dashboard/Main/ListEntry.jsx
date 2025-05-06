@@ -1,18 +1,23 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import DatePicker from "@/components/ui/DatePicker";
 import ModalLedger from "@/components/ui/Modal/ModalLedger";
 import Pagination from "@/components/ui/Pagination";
 import Search from "@/components/ui/Search";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
-import { dayJsFormatDate } from "@/utils/dayjs";
+import { dayJsFormatDate, dayjsFormatInputDate } from "@/utils/dayjs";
 import { formatRupiah } from "@/utils/formatter";
 import { Head, router, usePage } from "@inertiajs/react";
+import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 
 export default function ListEntry() {
     const { filters, entries } = usePage().props;
-
+    const now = dayjs().format("YYYY-MM-DD");
+    const oneMonthBefore = dayjs().subtract(1, "month").format("YYYY-MM-DD");
+    const [startDate, setStartDate] = useState(oneMonthBefore || "");
+    const [endDate, setEndDate] = useState(now || "");
     const [search, setSearch] = useState("");
     const [isSearch, setIsSearch] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -30,6 +35,8 @@ export default function ListEntry() {
                 q: search,
                 limit: paging.totalPage,
                 page: paging.currentPage,
+                start_date: dayjsFormatInputDate(startDate),
+                end_date: dayjsFormatInputDate(endDate),
             },
             {
                 preserveState: true,
@@ -63,7 +70,14 @@ export default function ListEntry() {
             }
             setIsMounted(false);
         }
-    }, [isMounted, paging.currentPage, paging.totalPage, search]);
+    }, [
+        isMounted,
+        paging.currentPage,
+        paging.totalPage,
+        search,
+        startDate,
+        endDate,
+    ]);
 
     const handlePageChange = async (page) => {
         await setPaging((prevState) => ({
@@ -84,6 +98,12 @@ export default function ListEntry() {
     useEffect(() => {
         if (filters.q) {
             setSearch(filters.q);
+        }
+        if (filters.start_date) {
+            setStartDate(filters.start_date);
+        }
+        if (filters.end_date) {
+            setEndDate(filters.end_date);
         }
         if (filters.limit) {
             setPaging((prev) => ({
@@ -112,6 +132,34 @@ export default function ListEntry() {
             <Head title="Daftar Entry" />
             <div className="space-y-6">
                 <div className="grid grid-cols-12 gap-6">
+                    <div className="lg:col-span-3 col-span-12">
+                        <DatePicker
+                            value={startDate}
+                            label={"Tanggal Mulai"}
+                            onChange={(event) => {
+                                setStartDate(event);
+                                setPaging((prevState) => ({
+                                    ...prevState,
+                                    totalPage: 1,
+                                }));
+                                handleFilterChange();
+                            }}
+                        />
+                    </div>
+                    <div className="lg:col-span-3 col-span-12">
+                        <DatePicker
+                            value={endDate}
+                            label={"Tanggal Akhir"}
+                            onChange={(event) => {
+                                setEndDate(event);
+                                setPaging((prevState) => ({
+                                    ...prevState,
+                                    totalPage: 1,
+                                }));
+                                handleFilterChange();
+                            }}
+                        />
+                    </div>
                     <div className="col-span-12">
                         <div className="grid grid-cols-12 gap-5">
                             <div className="col-span-12 lg:col-span-6  flex-wrap lg:flex gap-2 items-center">

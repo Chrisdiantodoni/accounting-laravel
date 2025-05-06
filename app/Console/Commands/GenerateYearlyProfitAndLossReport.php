@@ -21,6 +21,7 @@ class GenerateYearlyProfitAndLossReport extends Command
         Entry::where('user_id', null)->delete();
 
 
+
         $year = now()->year;
         $locations = Location::all();
 

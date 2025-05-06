@@ -203,29 +203,29 @@ function Entry() {
                             {entry?.entry_items.map((row, index) => (
                                 <tr
                                     key={index}
-                                    className="border border-slate-200 dark:border-slate-600 text-center"
+                                    className="border border-slate-200 dark:border-slate-600 text-center text-xs"
                                 >
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.type == "Debit"
                                             ? "Debet"
                                             : "Kredit"}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.ledger?.ledger_name}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {formatRupiah(row.debit)}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {formatRupiah(row.credit)}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.notes}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.user?.name}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {dayjsFormatDateTime(row.created_at)}
                                     </td>
                                 </tr>

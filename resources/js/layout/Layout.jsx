@@ -128,7 +128,7 @@ const Layout = ({ children }) => {
                                     duration: 0.5,
                                 }}
                             >
-                                <Breadcrumbs />
+                                {/* <Breadcrumbs /> */}
                                 {children}
                             </motion.div>
                         </Suspense>

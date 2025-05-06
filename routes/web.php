@@ -52,9 +52,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/profit-loss', [ReportController::class, 'profitLossReports'])->name('reports.profit.loss');
         Route::get('/balance-sheet', [ReportController::class, 'balanceSheetReports'])->name('reports.balance.sheet');
         Route::get('/historical-journal', [ReportController::class, 'historicalJournalReports'])->name('reports.historical.journal');
-
-        Route::post('/closing', [ClosingController::class, 'closeBook'])->name('close.book');
-        Route::post('/open', [ClosingController::class, 'openBook'])->name('open.book');
     });
 
     Route::prefix('close-book')->group(function () {

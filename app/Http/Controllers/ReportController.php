@@ -44,7 +44,14 @@ class ReportController extends Controller
                 return Inertia::render('Dashboard/Report/ProfitLoss', compact('data', 'filters'));
             }
 
-            $relations = ['ledgers.entry_items'];
+            $relations = [
+                'ledgers.entry_items' => function ($q) {
+                    $q->whereHas('entry', function ($query) {
+                        $query->where('status', 'posting');
+                    });
+                },
+                'ledgers.entry_items.entry', // tetap include entry-nya agar bisa diakses
+            ];
 
             $locationFilter = function ($q) use ($location_id) {
                 $q->where('location_id', $location_id);
@@ -60,14 +67,12 @@ class ReportController extends Controller
             ];
 
             $data = [];
-
             foreach ($collections as $key => $items) {
                 $data[$key] = [];
 
                 foreach ($items as $item) {
                     foreach ($item->ledgers as $ledger) {
-                        $total_debit = 0;
-                        $total_kredit = 0;
+                        $total = 0;
 
                         foreach ($ledger->entry_items as $entry) {
                             $entryDate = is_string($entry->entry_date)
@@ -75,15 +80,25 @@ class ReportController extends Controller
                                 : $entry->entry_date;
 
                             if ($entryDate->format('Y') == $year && $entryDate->format('m') == str_pad($month, 2, '0', STR_PAD_LEFT)) {
-                                $total_debit += $entry->debit;
-                                $total_kredit += $entry->credit;
+                                switch ($key) {
+                                    case 'sales':
+                                        $total += $entry->credit - $entry->debit; // credit positif, debit negatif
+                                        break;
+                                    case 'revenues':
+                                        $total += $entry->credit - $entry->debit; // sama seperti sales
+                                        break;
+                                    case 'cogs':
+                                    case 'costs':
+                                    case 'other_costs':
+                                        $total += $entry->debit - $entry->credit; // debit positif, kredit negatif
+                                        break;
+                                }
                             }
                         }
 
                         $data[$key][] = [
                             'ledger_name' => $ledger->ledger_name,
-                            'total_debit' => $total_debit,
-                            'total_kredit' => $total_kredit,
+                            'total' => $total,
                         ];
                     }
                 }
@@ -132,10 +147,17 @@ class ReportController extends Controller
 
 
 
-
+            $relations = [
+                'entry_items' => function ($q) {
+                    $q->whereHas('entry', function ($query) {
+                        $query->where('status', 'posting');
+                    });
+                },
+                'entry_items.entry', // tetap include entry-nya agar bisa diakses
+            ];
 
             $ledgers = Ledger::query()
-                ->with(['entry_items', 'child_account.parent_account'])
+                ->with(array_merge(['entry_items', 'child_account.parent_account'], $relations))
                 ->where('location_id', $location_id)
                 ->whereHas('child_account.parent_account') // pastikan relasi lengkap
                 ->get()

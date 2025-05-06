@@ -32,7 +32,7 @@ class EntryController extends Controller
             ->when($q, function ($query) use ($q) {
                 $query->where('document_number',  'like', '%' . $q . '%');
             })->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
+                $query->whereBetween('entries_date', [$startDate, $endDate]);
             })
             ->paginate($limit);
 
@@ -40,6 +40,8 @@ class EntryController extends Controller
             'limit' => $limit,
             'q' => $q,
             'page' => $page,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
         ];
         return Inertia::render('Dashboard/Main/ListEntry', compact('entries', 'filters'));
     }
@@ -368,12 +370,15 @@ class EntryController extends Controller
                 'posting_at' => Carbon::now(),
                 'user_posting_id' => $user->user_id,
             ]);
+            $entryDate = Carbon::parse($entry->entries_date);
+
             $totalLabaBulanDitahan = $profitLossService->calculate(
                 $entry->location->id,
-                Carbon::now()->format('m'),
-                Carbon::now()->format('Y')
+                $entryDate->format('m'),
+                $entryDate->format('Y')
             )['laba_sesudah_pendapatan'];
-            $lastMonth = Carbon::now()->subMonth();
+
+            $lastMonth = $entryDate->copy()->subMonth();
 
             $month = $lastMonth->format('m'); // bulan lalu, misal '04'
             $year = $lastMonth->format('Y');
@@ -383,6 +388,8 @@ class EntryController extends Controller
                 $month,
                 $year,
             )['laba_sesudah_pendapatan'];
+
+            // return ResponseFormatter::success($totalLabaBulanLalu);
 
             $locationCode = $entry->location->code;
 
