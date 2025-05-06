@@ -17,12 +17,12 @@ const schema = yup.object().shape({
 function BalanceSheet() {
     const { data, auth } = usePage().props;
     const [isLoading, setIsLoading] = useState(false);
-    console.log({ data });
 
     const {
         register,
         handleSubmit,
         control,
+        watch,
         formState: { errors },
     } = useForm({
         resolver: yupResolver(schema),
@@ -36,7 +36,7 @@ function BalanceSheet() {
         (find) => find?.pivot?.isSelected == 1,
     )?.year;
 
-    const monthOptions = [
+    const months = [
         "Januari",
         "Februari",
         "Maret",
@@ -49,7 +49,8 @@ function BalanceSheet() {
         "Oktober",
         "November",
         "Desember",
-    ].map((month, index) => ({
+    ];
+    const monthOptions = months.map((month, index) => ({
         label: `${month} ${yearUser}`,
         value: String(index + 1),
     }));
@@ -117,7 +118,7 @@ function BalanceSheet() {
                     onClick={handleSubmit(getEntries)}
                 />
             </div>
-            <div className="space-y-6">
+            <div className="space-y-6 mt-5">
                 {isLoading ? (
                     <>
                         <LoaderCircle />
@@ -125,7 +126,59 @@ function BalanceSheet() {
                 ) : (
                     <div className="grid grid-cols-12 gap-6">
                         <div className="col-span-12">
-                            {JSON.stringify(data)}
+                            <table className="min-w-full divide-y divide-slate-100 table-fixed dark:divide-slate-700 border border-slate-200">
+                                <thead className="whitespace-nowrap bg-slate-200 dark:bg-slate-700">
+                                    <tr>
+                                        <th
+                                            scope="col"
+                                            className=" table-th py-3"
+                                        >
+                                            Nama Perkiraan
+                                        </th>
+
+                                        <th
+                                            scope="col"
+                                            className=" table-th py-3"
+                                        >
+                                            {`${months[watch("monthYear") - 1]} ${yearUser}`}
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className=" bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 ">
+                                    {Object.entries(data).map(
+                                        ([category, daftarAkun]) => (
+                                            <React.Fragment key={category}>
+                                                <tr className="bg-slate-100 dark:bg-slate-700">
+                                                    <td
+                                                        colSpan="3"
+                                                        className="table-th py-1 text-sm "
+                                                    >
+                                                        {category}
+                                                    </td>
+                                                </tr>
+                                                {daftarAkun.map((akun, idx) => (
+                                                    <tr
+                                                        key={idx}
+                                                        className="border-t border-slate-200 text-xs"
+                                                    >
+                                                        <td className="py-1 px-3">
+                                                            {akun.ledger_name}
+                                                        </td>
+                                                        <td className="py-1 px-3 text-right">
+                                                            {(
+                                                                akun.total_kredit -
+                                                                akun.total_debit
+                                                            ).toLocaleString(
+                                                                "id-ID",
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </React.Fragment>
+                                        ),
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 )}

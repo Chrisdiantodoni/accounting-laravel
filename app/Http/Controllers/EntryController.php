@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use App\Services\ProfitLossService;
+
 
 class EntryController extends Controller
 {
@@ -346,21 +348,91 @@ class EntryController extends Controller
         return Inertia::render('Dashboard/Main/Form/Entry', compact('entry'));
     }
 
-    public function updateToPosting($id)
+    public function updateToPosting($id, ProfitLossService $profitLossService)
     {
         try {
+            DB::beginTransaction();
             $user = Auth::user();
-            $entry = Entry::find($id);
+            $entry = Entry::with(['entry_items.ledger.child_account.parent_account', 'location'])->find($id);
+
             $entry->update([
                 'status' => 'posting',
                 'posting_at' => Carbon::now(),
                 'user_posting_id' => $user->user_id,
             ]);
+            $totalLabaBulanDitahan = $profitLossService->calculate(
+                $entry->location->id,
+                Carbon::now()->format('m'),
+                Carbon::now()->format('Y')
+            )['laba_sesudah_pendapatan'];
+            $lastMonth = Carbon::now()->subMonth();
+
+            $month = $lastMonth->format('m'); // bulan lalu, misal '04'
+            $year = $lastMonth->format('Y');
+
+            $totalLabaBulanLalu = $profitLossService->calculate(
+                $entry->location->id,
+                $month,
+                $year,
+            )['laba_sesudah_pendapatan'];
+
+            $locationCode = $entry->location->code;
+
+            $entriesDate = Carbon::parse($entry->entries_date);
+            $year = $entriesDate->year;
+            $monthCode = str_pad($entriesDate->month, 2, '0', STR_PAD_LEFT);
+            $documentNumber = "{$year}.{$locationCode}.{$monthCode}.LR.001";
+
+            $targetDocumentNumber = $documentNumber;
+            $targetEntry = Entry::where('document_number', $targetDocumentNumber)->first();
+            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            })->first();
+            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            })->first();
+            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan s.d Bulan Lalu');
+            })->first();
+
+            if ($entryItemsLabaBulanIniDebit) {
+                $entryItemsLabaBulanIniDebit->update([
+                    'debit' => $totalLabaBulanDitahan < 0 ? abs($totalLabaBulanDitahan) : 0,
+                    'credit' => $totalLabaBulanDitahan >= 0 ? $totalLabaBulanDitahan : 0,
+                ]);
+            }
+
+            // Update entry item untuk "Laba Ditahan s.d Bulan Lalu"
+            if ($entryItemsLabaBulanLalu) {
+                $entryItemsLabaBulanLalu->update([
+                    'debit' => $totalLabaBulanLalu < 0 ? abs($totalLabaBulanLalu) : 0,
+                    'credit' => $totalLabaBulanLalu >= 0 ? $totalLabaBulanLalu : 0,
+                ]);
+            }
+
+            if ($entryItemsLabaBulanIniKredit && $entryItemsLabaBulanLalu) {
+                $isLaluDebit = $entryItemsLabaBulanLalu->debit > 0;
+
+                $entryItemsLabaBulanIniKredit->update([
+                    'debit' => !$isLaluDebit ? abs($totalLabaBulanLalu) : 0,
+                    'credit' => $isLaluDebit ? $totalLabaBulanLalu : 0,
+                ]);
+            }
+            if ($targetEntry) {
+                $totalDebit = $targetEntry->entry_items()->sum('debit');
+                $totalCredit = $targetEntry->entry_items()->sum('credit');
+
+                $targetEntry->update([
+                    'debit' => $totalDebit,
+                    'credit' => $totalCredit,
+                ]);
+            }
             $notification = array(
                 'type' => 'success',
                 'message' =>  'Entry Data dilakukan Posting'
             );
-            return redirect()->intended(route('list.entries',))->with('message', $notification);
+            DB::commit();
+            return redirect()->intended(route('list.entries'))->with('message', $notification);
         } catch (\Exception $e) {
             DB::rollBack();
             $notification = array(
@@ -371,17 +443,92 @@ class EntryController extends Controller
         }
     }
 
-    public function unpostingEntry($id)
+    public function unpostingEntry($id, ProfitLossService $profitLossService)
     {
         try {
-            $entry = Entry::find($id);
+            DB::beginTransaction();
+            $entry = Entry::with(['entry_items.ledger.child_account.parent_account', 'location'])->find($id);
+
             $entry->update([
                 'status' => 'create',
             ]);
+            $excludeIds = $entry->entry_items->pluck('id')->toArray();
+            $totalLabaBulanDitahan = $profitLossService->calculateWithExclusion(
+                $entry->location->id,
+                Carbon::now()->format('m'),
+                Carbon::now()->format('Y'),
+                $excludeIds,
+            )['laba_sesudah_pendapatan'];
+            $lastMonth = Carbon::now()->subMonth();
+
+            $month = $lastMonth->format('m'); // bulan lalu, misal '04'
+            $year = $lastMonth->format('Y');
+
+            $totalLabaBulanLalu = $profitLossService->calculateWithExclusion(
+                $entry->location->id,
+                $month,
+                $year,
+                $excludeIds,
+
+            )['laba_sesudah_pendapatan'];
+            // return ResponseFormatter::success($totalLabaBulanDitahan);
+
+            $locationCode = $entry->location->code;
+
+            $entriesDate = Carbon::parse($entry->entries_date);
+            $year = $entriesDate->year;
+            $monthCode = str_pad($entriesDate->month, 2, '0', STR_PAD_LEFT);
+            $documentNumber = "{$year}.{$locationCode}.{$monthCode}.LR.001";
+
+            $targetDocumentNumber = $documentNumber;
+            $targetEntry = Entry::where('document_number', $targetDocumentNumber)->first();
+            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            })->first();
+            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            })->first();
+            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) {
+                $q->where('ledger_name', 'Laba Ditahan s.d Bulan Lalu');
+            })->first();
+
+            if ($entryItemsLabaBulanIniDebit) {
+                $entryItemsLabaBulanIniDebit->update([
+                    'debit' => $totalLabaBulanDitahan < 0 ? abs($totalLabaBulanDitahan) : 0,
+                    'credit' => $totalLabaBulanDitahan >= 0 ? $totalLabaBulanDitahan : 0,
+                ]);
+            }
+
+            // Update entry item untuk "Laba Ditahan s.d Bulan Lalu"
+            if ($entryItemsLabaBulanLalu) {
+                $entryItemsLabaBulanLalu->update([
+                    'debit' => $totalLabaBulanLalu < 0 ? abs($totalLabaBulanLalu) : 0,
+                    'credit' => $totalLabaBulanLalu >= 0 ? $totalLabaBulanLalu : 0,
+                ]);
+            }
+
+            if ($entryItemsLabaBulanIniKredit && $entryItemsLabaBulanLalu) {
+                $isLaluDebit = $entryItemsLabaBulanLalu->debit > 0;
+
+                $entryItemsLabaBulanIniKredit->update([
+                    'debit' => !$isLaluDebit ? abs($totalLabaBulanLalu) : 0,
+                    'credit' => $isLaluDebit ? $totalLabaBulanLalu : 0,
+                ]);
+            }
+            if ($targetEntry) {
+                $totalDebit = $targetEntry->entry_items()->sum('debit');
+                $totalCredit = $targetEntry->entry_items()->sum('credit');
+
+                $targetEntry->update([
+                    'debit' => $totalDebit,
+                    'credit' => $totalCredit,
+                ]);
+            }
             $notification = array(
                 'type' => 'success',
                 'message' =>  'Unposting Sukses'
             );
+            DB::commit();
             return redirect()->intended(route('list.postings'))->with('message', $notification);
         } catch (\Exception $e) {
             DB::rollBack();

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('entry_logs', function (Blueprint $table) {
             $table->id();
-            $table->uuid('user_id');
+            $table->uuid('user_id')->nullable();
             $table->string('action');
             $table->unsignedBigInteger('entries_id');
             $table->foreign("entries_id")->references("id")->on("entries")->onDelete("cascade");

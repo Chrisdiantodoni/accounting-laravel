@@ -162,9 +162,9 @@ export default function ListPosting() {
                                 ),
                                 ...item,
                                 location: item?.location?.location_name,
-                                user: item?.user?.name,
-                                debit: formatRupiah(item?.debit),
-                                credit: formatRupiah(item?.credit),
+                                user: item?.user?.name ?? "SYSTEM",
+                                debit: formatRupiah(item?.debit ?? 0),
+                                credit: formatRupiah(item?.credit ?? 0),
                                 created_at: dayJsFormatDate(item?.created_at),
                                 action: (
                                     <Button
@@ -212,7 +212,7 @@ const headersEntry = [
     },
     {
         title: "Tgl. Edit",
-        key: "location",
+        key: "edited_at",
     },
     {
         title: "User",

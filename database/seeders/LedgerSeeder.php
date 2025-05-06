@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ChildAccount;
+use App\Models\Ledger;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,7 @@ class LedgerSeeder extends Seeder
             ['prefix' => 'Biaya yang masih harus Dibayar', 'ledger_name' => 'Biaya yang masih harus Dibayar'],
             ['prefix' => 'Hutang SPBU', 'ledger_name' => 'Hutang SPBU'],
             ['prefix' => 'Hutang Lain-lain', 'ledger_name' => 'Hutang Lain-lain'],
+            ['prefix' => 'Hutang Aktiva Tetap', 'ledger_name' => 'Hutang Aktiva Tetap'],
             ['prefix' => 'Modal Saham', 'ledger_name' => 'Modal Saham'],
             ['prefix' => 'Laba Ditahan (TA)', 'ledger_name' => 'Laba Ditahan (TA)'],
             ['prefix' => 'Saldo Laba', 'ledger_name' => 'Laba Ditahan s.d Tahun Lalu'],
@@ -149,17 +151,20 @@ class LedgerSeeder extends Seeder
                 $type_start_balance = ($child_account->parent_account_id % 2 == 0) ? 'Debet' : 'Kredit';
 
                 // Insert data ke tabel ledgers untuk setiap child_account yang ditemukan
-                DB::table('ledgers')->insert([
-                    'ledger_code' => $ledger_code,
-                    'ledger_name' => $ledger_name,
-                    'balance' => $balance,
-                    'type_start_balance' => $type_start_balance,
-                    'child_account_id' => $child_account->id,
-                    'location_id' => $child_account->location_id, // Pastikan location_id sudah didefinisikan
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                    'notes' => 'Initial ledger entry for ' . $ledger_name,
-                ]);
+                Ledger::firstOrCreate(
+                    ['ledger_code' => $ledger_name],
+                    ([
+                        'ledger_code' => $ledger_code,
+                        'ledger_name' => $ledger_name,
+                        'balance' => $balance,
+                        'type_start_balance' => $type_start_balance,
+                        'child_account_id' => $child_account->id,
+                        'location_id' => $child_account->location_id, // Pastikan location_id sudah didefinisikan
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'notes' => 'Initial ledger entry for ' . $ledger_name,
+                    ])
+                );
 
                 // Menyimpan prefix sebelumnya untuk pengecekan perubahan prefix
                 $previous_prefix = $ledger['prefix'];

@@ -39,7 +39,6 @@ class HandleInertiaRequests extends Middleware
             // $user->load('permissions', 'dealer_users.dealers', 'roles');
             $user->load('permissions', 'roles');
             $authData['user'] = $user;
-            $year = Year::all();
         } else {
             // If there is no logged-in user, set user data to null
             $authData['user'] = null;
@@ -50,7 +49,6 @@ class HandleInertiaRequests extends Middleware
                 'message' => fn() => $request->session()->get('message'),
             ],
             'auth' => $authData,
-            'years' => $year
         ]);
     }
 }

@@ -7,6 +7,8 @@ use App\Models\Location;
 use App\Models\LocationByUser;
 use App\Models\Position;
 use App\Models\User;
+use App\Models\Year;
+use App\Models\YearByUser;
 use Faker\Core\Uuid;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -33,6 +35,8 @@ class DatabaseSeeder extends Seeder
             CoaGroupSeeder::class,
             ParentAccountSeeder::class,
             LedgerSeeder::class,
+            YearSeeder::class,
+            ProfitStatementSeeder::class,
         ]);
 
         $locations = Location::all();
@@ -40,6 +44,14 @@ class DatabaseSeeder extends Seeder
         foreach ($locations as $key =>  $location) {
             LocationByUser::create([
                 'location_id' => $location['id'],
+                'user_id' => $user->user_id,
+                'isSelected' => $key == 0 ? true : false
+            ]);
+        }
+        $years = Year::all();
+        foreach ($years as $key =>  $year) {
+            YearByUser::create([
+                'year_id' => $year['id'],
                 'user_id' => $user->user_id,
                 'isSelected' => $key == 0 ? true : false
             ]);

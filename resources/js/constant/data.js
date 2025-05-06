@@ -47,8 +47,8 @@ export const menuItems = [
             },
             {
                 childtitle: "Jurnal Historical",
-                childlink: route("list.entries"),
-                link: "list-entries",
+                childlink: route("reports.historical.journal"),
+                link: "reports/historical-journal",
             },
         ],
     },

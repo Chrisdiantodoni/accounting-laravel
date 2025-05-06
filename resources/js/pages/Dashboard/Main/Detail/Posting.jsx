@@ -2,7 +2,7 @@ import Card from "@/components/ui/Card";
 import { formatRupiah } from "@/utils/formatter";
 import { router, usePage } from "@inertiajs/react";
 import React, { useState } from "react";
-import { dayjsFormatDateTime } from "../../../../utils/dayjs";
+import { dayJsFormatDate, dayjsFormatDateTime } from "../../../../utils/dayjs";
 import Table from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import Swal from "sweetalert2";
@@ -68,7 +68,9 @@ function Posting() {
                             },
                             {
                                 label: "Tanggal",
-                                value: posting?.entries_date || "-",
+                                value:
+                                    dayJsFormatDate(posting?.entries_date) ||
+                                    "-",
                             },
                             {
                                 label: "Lokasi",
@@ -117,7 +119,7 @@ function Posting() {
                             },
                             {
                                 label: "User Edit",
-                                value: posting?.user_edit?.name || "-",
+                                value: posting?.user_edit?.name ?? "SYSTEM",
                             },
                             {
                                 label: "Tgl Posting",
@@ -162,33 +164,33 @@ function Posting() {
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="text-sm bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                        <tbody className=" bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 ">
                             {posting?.entry_items.map((row, index) => (
                                 <tr
                                     key={index}
-                                    className="border border-slate-200 dark:border-slate-600 text-center"
+                                    className="border border-slate-200 dark:border-slate-600 text-center text-xs"
                                 >
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.type == "Debit"
                                             ? "Debet"
                                             : "Kredit"}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.ledger?.ledger_name}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {formatRupiah(row.debit)}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {formatRupiah(row.credit)}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {row.notes}
                                     </td>
-                                    <td className="table-td text-center py-1">
-                                        {row.user?.name}
+                                    <td className="table-td text-center py-1  text-xs">
+                                        {row.user?.name ?? "SYSTEM"}
                                     </td>
-                                    <td className="table-td text-center py-1">
+                                    <td className="table-td text-center py-1  text-xs">
                                         {dayjsFormatDateTime(row.created_at)}
                                     </td>
                                 </tr>
@@ -212,25 +214,16 @@ function Posting() {
                         </tbody>
                     </table>
                 </div>
-                <div className="col-span-12 lg:flex lg:flex-wrap gap-3 grid grid-cols-1 mt-2">
-                    <Button
-                        text={"Unposting"}
-                        className="py-2 btn-warning"
-                        isLoading={isLoading.posting}
-                        onClick={postingEntry}
-                    />
-                    {/* <Button
-                            text={"Edit"}
-                            className="py-2 btn-primary"
-                            link={route("edit.entries", posting?.id)}
-                        />
+                {posting?.user_id != null && (
+                    <div className="col-span-12 lg:flex lg:flex-wrap gap-3 grid grid-cols-1 mt-2">
                         <Button
-                            text={"Hapus"}
-                            className="py-2 btn-danger"
-                            onClick={deleteEntry}
-                            isLoading={isLoading.deleteEntry}
-                        /> */}
-                </div>
+                            text={"Unposting"}
+                            className="py-2 btn-warning"
+                            isLoading={isLoading.posting}
+                            onClick={postingEntry}
+                        />
+                    </div>
+                )}
                 <div className="col-span-12 mt-2">
                     <div className="py-2">
                         <span className="text-lg py">Log</span>
@@ -239,7 +232,7 @@ function Posting() {
                         headers={headersLog}
                         data={posting?.entry_logs?.map((item) => ({
                             date: dayjsFormatDateTime(item?.created_at),
-                            user: item?.user?.name,
+                            user: item?.user?.name ?? "SYSTEM",
                             action: item?.action,
                         }))}
                     />

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign("user_id")->references("user_id")->on("users")->onDelete("set null");
             $table->integer('debit');
             $table->integer('credit');
-            $table->string('notes');
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
     }

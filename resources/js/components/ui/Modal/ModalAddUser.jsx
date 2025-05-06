@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React from "react";
 import createStore from "@/context";
 import Modal from "../Modal";
@@ -5,17 +6,14 @@ import Button from "../Button";
 import Textinput from "../Textinput";
 import { useForm } from "@inertiajs/react";
 import SelectComponent from "../Master/Select";
-import { useMutation } from "@tanstack/react-query";
-import master from "@/services/api/master";
-import { useEffect, useState } from "react";
-import queryString from "@/utils/queryString";
 
-const ModalAddUser = ({ locations }) => {
+const ModalAddUser = ({ locations, years }) => {
     const { handleModal, modal } = createStore();
     const { post, processing, data, setData, errors, reset } = useForm({
         name: "",
         username: "",
         locations: [],
+        years: [],
     });
 
     const onSubmit = async () => {
@@ -81,6 +79,21 @@ const ModalAddUser = ({ locations }) => {
                         onChange={(e) => setData("locations", e)}
                         options={locations?.map((item) => ({
                             label: item?.location_name,
+                            value: item,
+                        }))}
+                        closeMenuOnSelect={false}
+                        menuPortalTarget={document.body}
+                    />
+                </div>
+                <div className="col-span-12">
+                    <SelectComponent
+                        isMulti
+                        label={"Tahun"}
+                        error={errors.dealers}
+                        value={data.years}
+                        onChange={(e) => setData("years", e)}
+                        options={years?.map((item) => ({
+                            label: item?.year,
                             value: item,
                         }))}
                         closeMenuOnSelect={false}

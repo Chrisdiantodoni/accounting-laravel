@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreign("location_id")->references("id")->on("locations")->onDelete("cascade");
             $table->uuid('user_edit_id')->nullable();
             $table->foreign("user_edit_id")->references("user_id")->on("users")->onDelete("set null");
-            $table->uuid('user_id');
-            $table->foreign("user_id")->references("user_id")->on("users")->onDelete("cascade");
+            $table->uuid('user_id')->nullable();
+            $table->foreign("user_id")->references("user_id")->on("users")->onDelete("set null");
             $table->integer('debit');
             $table->integer('credit');
             $table->string('notes')->nullable();

@@ -88,6 +88,17 @@ class UserController extends Controller
                 'status' => 1
             ]);
 
+            $years = $request->input('years');
+            foreach ($years as $i => $year) {
+                $yearValue = $year['value'];
+
+                YearByUser::create([
+                    'user_id' => $user->user_id,
+                    'location_id' => $yearValue['id'],
+                    'isSelected' => $i === 0,
+                ]);
+            }
+
             $locations = $request->input('locations');
             foreach ($locations as $i => $location) {
                 $locationValue = $location['value'];
