@@ -8,6 +8,7 @@ use App\Models\Cogs;
 use App\Models\Cost;
 use App\Models\EntryItems;
 use App\Models\Ledger;
+use App\Models\LedgerBalance;
 use App\Models\OtherCost;
 use App\Models\ProfitLossStatement;
 use App\Models\Revenue;
@@ -128,48 +129,52 @@ class ReportController extends Controller
                 'month' => 'required',
                 'year' => 'required',
             ]);
-            $location_id = $request->input('location_id');
-            $month = $request->input('month');
-            $year = $request->input('year');
-            $locationFilter = function ($q) use ($location_id) {
-                $q->where('location_id', $location_id);
-            };
 
             if ($validator->fails()) {
-                $data = [];
-                $filters = [
-                    'month' => $month,
-                    'year' => $year,
-                    'location_id' => $location_id
-                ];
-                return Inertia::render('Dashboard/Report/BalanceSheet', compact('data', 'filters'));
+                $filters = $request->only(['month', 'year', 'location_id']);
+                return Inertia::render('Dashboard/Report/BalanceSheet', [
+                    'data' => [],
+                    'filters' => $filters,
+                ]);
             }
 
+            $location_id = $request->input('location_id');
+            $month = (int) $request->input('month');
+            $year = (int) $request->input('year');
 
-
+            // $relations = [
+            //     'entry_items' => function ($q) {
+            //         $q->whereHas('entry', function ($query) {
+            //             $query->where('status', 'posting');
+            //         });
+            //     },
+            //     'entry_items.entry',
+            // ];
             $relations = [
                 'entry_items' => function ($q) {
-                    $q->whereHas('entry', function ($query) {
-                        $query->where('status', 'posting');
+                    $q->where(function ($query) {
+                        $query->whereNull('entries_id') // biarkan lewat
+                            ->orWhereHas('entry', function ($subQuery) {
+                                $subQuery->where('status', 'posting');
+                            });
                     });
                 },
-                'entry_items.entry', // tetap include entry-nya agar bisa diakses
+                'entry_items.entry',
             ];
 
             $ledgers = Ledger::query()
                 ->with(array_merge(['entry_items', 'child_account.parent_account'], $relations))
                 ->where('location_id', $location_id)
-                ->whereHas('child_account.parent_account') // pastikan relasi lengkap
+                ->whereHas('child_account.parent_account')
                 ->get()
-                ->filter(function ($ledger) use ($year, $month) {
+                ->filter(function ($ledger) {
                     return $ledger->child_account?->parent_account?->coa_group_type === 'Neraca';
                 })
                 ->groupBy(function ($ledger) {
                     return $ledger->child_account->parent_account->coa_group ?? 'Tidak Diketahui';
                 });
-
+            // return ResponseFormatter::success($ledgers);
             $data = [];
-
 
             foreach ($ledgers as $group => $ledgerGroup) {
                 $data[$group] = [];
@@ -178,38 +183,56 @@ class ReportController extends Controller
                     $total_debit = 0;
                     $total_kredit = 0;
 
+                    // Hitung saldo awal dari ledgers_end_balances bulan sebelumnya
+                    $prevMonth = $month - 1;
+                    $prevYear = $year;
+                    if ($prevMonth <= 0) {
+                        $prevMonth = 12;
+                        $prevYear -= 1;
+                    }
+
+                    $saldo_awal = LedgerBalance::where('ledger_id', $ledger->id)
+                        ->where('month', $prevMonth)
+                        ->where('year', $prevYear)
+                        ->value('closing_balance') ?? 0;
+
                     foreach ($ledger->entry_items as $entry) {
                         $entryDate = is_string($entry->entry_date)
                             ? Carbon::parse($entry->entry_date)
                             : $entry->entry_date;
 
-                        if ($entryDate->format('Y') == $year && $entryDate->format('m') == str_pad($month, 2, '0', STR_PAD_LEFT)) {
+                        if ((int)$entryDate->format('Y') === $year && (int)$entryDate->format('m') === $month) {
                             $total_debit += $entry->debit;
                             $total_kredit += $entry->credit;
                         }
                     }
 
+                    $saldo_akhir = $saldo_awal + ($total_debit - $total_kredit);
+
                     $data[$group][] = [
                         'ledger_name' => $ledger->ledger_name,
+                        'saldo_awal' => $saldo_awal,
                         'total_debit' => $total_debit,
                         'total_kredit' => $total_kredit,
+                        'saldo_akhir' => $saldo_akhir,
                     ];
                 }
             }
 
-
             $filters = [
                 'month' => $month,
                 'year' => $year,
-                'location_id' => $location_id
+                'location_id' => $location_id,
             ];
 
+            DB::commit();
             return Inertia::render('Dashboard/Report/BalanceSheet', compact('data', 'filters', 'ledgers'));
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('message', ['type' => 'error', 'message' => $e->getMessage()]);
         }
     }
+
     public function historicalJournalReports(Request $request)
     {
         try {
@@ -218,7 +241,49 @@ class ReportController extends Controller
             $start_date = $request->input('start_date');
             $end_date = $request->input('end_date');
 
-            $data = Ledger::where('id', $ledger_id)->get();
+            $totalInRange = [
+                'total_debit' => 0,
+                'total_credit' => 0,
+            ];
+            $totalBefore = [
+                'total_debit' => 0,
+                'total_credit' => 0,
+            ];
+            $journals = [];
+
+            // Hanya lakukan query kalau ada filter lengkap
+            if ($ledger_id && $location_id && $start_date && $end_date) {
+                // Total debit & kredit dalam rentang tanggal
+                $entriesInRange = EntryItems::with(['entry' => function ($query) use ($location_id) {
+                    $query->where('location_id', $location_id);
+                }])
+                    ->where('ledger_id', $ledger_id)
+                    ->whereBetween('entry_date', [$start_date, $end_date]);
+
+                $totalInRange = $entriesInRange->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
+
+                // Total sebelum rentang tanggal
+                $entriesBefore = EntryItems::with(['entry' => function ($query) use ($location_id) {
+                    $query->where('location_id', $location_id);
+                }])
+                    ->where('ledger_id', $ledger_id)
+                    ->where('entry_date', '<', $start_date);
+
+                $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
+
+                $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
+                    $query->whereHas('entry', function ($subQuery) use ($location_id, $start_date, $end_date) {
+                        $subQuery->where('location_id', $location_id)
+                            ->whereBetween('entries_date', [$start_date, $end_date]);
+                    });
+                }, 'entry_items.entry'])
+                    ->where('id', $ledger_id)
+                    ->whereHas('entry_items.entry', function ($query) use ($location_id, $start_date, $end_date) {
+                        $query->where('location_id', $location_id)
+                            ->whereBetween('entries_date', [$start_date, $end_date]);
+                    })
+                    ->first();
+            }
 
             $filters = [
                 'ledger_id' => $ledger_id,
@@ -226,10 +291,21 @@ class ReportController extends Controller
                 'start_date' => $start_date,
                 'end_date' => $end_date,
             ];
+            $balanceLedger = 0;
+            if ($journals) {
+                $balanceLedger = $journals->type_start_balance === 'Kredit'
+                    ? -1 * $journals->balance
+                    : $journals->balance;
+            }
 
-            return Inertia::render('Dashboard/Report/HistoricalJournal', compact('data', 'filters'));
+            return Inertia::render('Dashboard/Report/HistoricalJournal', [
+                'journals' => $journals,
+                'filters' => $filters,
+                'total_in_range' => $totalInRange,
+                'total_before_range' => $totalBefore,
+                'balance_ledger' => $balanceLedger
+            ]);
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->with('message', ['type' => 'error', 'message' => $e->getMessage()]);
         }
     }

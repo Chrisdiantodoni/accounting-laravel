@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('entry_items', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('entries_id');
-            $table->foreign("entries_id")->references("id")->on("entries")->onDelete("cascade");
+            $table->unsignedBigInteger('entries_id')->nullable();
+            $table->foreign("entries_id")->references("id")->on("entries")->onDelete("set null");
             $table->date('entry_date');
             $table->unsignedBigInteger('ledger_id');
             $table->foreign("ledger_id")->references("id")->on("ledgers")->onDelete("cascade");

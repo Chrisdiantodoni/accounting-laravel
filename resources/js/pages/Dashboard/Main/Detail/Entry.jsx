@@ -211,7 +211,7 @@ function Entry() {
                                             : "Kredit"}
                                     </td>
                                     <td className="table-td text-center py-1  text-xs">
-                                        {row.ledger?.ledger_name}
+                                        {`[${row?.ledger?.ledger_code}] ${row.ledger?.ledger_name}`}
                                     </td>
                                     <td className="table-td text-center py-1  text-xs">
                                         {formatRupiah(row.debit)}
@@ -231,7 +231,7 @@ function Entry() {
                                 </tr>
                             ))}
 
-                            <tr className="text-center text-sm border border-slate-200 bg-slate-50 dark:bg-slate-700">
+                            <tr className="text-center text-sm border border-slate-200 bg-slate-50 dark:bg-slate-700  whitespace-nowrap">
                                 <td
                                     className="table-td text-center py-1"
                                     colSpan={2}

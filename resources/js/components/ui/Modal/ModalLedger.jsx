@@ -103,6 +103,7 @@ const ModalLedger = () => {
     return (
         <Modal
             title="Tambah Ledger"
+            // className="max-w-4xl"
             activeModal={modal.modalLedgers}
             centered={true}
             onClose={() => handleModal("modalLedgers", false)}
@@ -141,6 +142,7 @@ const ModalLedger = () => {
                         value={data.child_account}
                         placeholder="Kode Anak"
                         error={errors.child_account_id}
+                        disabled
                     />
                 </div>
 
@@ -166,6 +168,7 @@ const ModalLedger = () => {
                         onChange={(e) =>
                             setData("ledger_code_prefix", e.target.value)
                         }
+                        disabled={true}
                         error={errors.ledger_code}
                     />
                 </div>

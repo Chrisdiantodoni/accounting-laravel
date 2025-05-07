@@ -7,6 +7,7 @@ use App\Models\Location;
 use App\Models\Entry;
 use App\Models\EntryItems;
 use App\Models\EntryLog;
+use App\Services\ProfitLossService;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -16,9 +17,10 @@ class GenerateYearlyProfitAndLossReport extends Command
     protected $signature = 'app:generate-yearly-profit-and-loss-report';
     protected $description = 'Generate monthly profit and loss entries per location';
 
-    public function handle()
+    public function handle(ProfitLossService $profitLossService)
     {
         Entry::where('user_id', null)->delete();
+        EntryItems::where('entries_id', null)->delete();
 
 
 
@@ -27,15 +29,49 @@ class GenerateYearlyProfitAndLossReport extends Command
 
         foreach ($locations as $location) {
             $locationCode = str_pad($location->code, 3, '0', STR_PAD_LEFT);
-            $labaDitahanBulanLalu = Ledger::where('ledger_name', 'Laba Ditahan s.d Bulan Lalu')->where('location_id', $location->id)->first();
-            $labaDitahanBulanIni = Ledger::where('ledger_name', 'Laba Ditahan Bulan ini')->where('location_id', $location->id)->first();
+            // Laba Ditahan Bulan s.d bulan lalu 'ledger_code', "503-$locationCode-002"
+            $labaDitahanTahunLalu = Ledger::where('ledger_code', "503-$locationCode-001")->where('location_id', $location->id)->first();
+
+            $labaDitahanBulanLalu = Ledger::where('ledger_code', "503-$locationCode-002")->where('location_id', $location->id)->first();
+            // Laba Ditahan Bulan ini 'ledger_code', "503-$locationCode-003"
+            $labaDitahanBulanIni = Ledger::where('ledger_code', "503-$locationCode-003")->where('location_id', $location->id)->first();
 
             if (!$labaDitahanBulanLalu || !$labaDitahanBulanIni) {
                 $this->error('Beberapa data ledger tidak ditemukan.');
                 return;
             }
+            $year = now()->year;
+
+            $this->info("▶️ Thun dihitung Lalu" . $year);
+            $lastYear = now()->year - 1;
+            $labaPendapatanTahunLalu =  $profitLossService->calculatePerYear($location->id, $lastYear);
+            $this->info("▶️ Laba Tahun Lalu" . $labaPendapatanTahunLalu['laba_sesudah_pendapatan']);
+
 
             for ($month = 1; $month <= 12; $month++) {
+                $entryDate = Carbon::create($year, $month, 1)->endOfMonth();
+
+                if ($labaPendapatanTahunLalu['laba_sesudah_pendapatan'] >= 0) {
+                    EntryItems::create([
+                        'entry_date' => $entryDate,
+                        'ledger_id' => $labaDitahanTahunLalu->id,
+                        'user_id' => null,
+                        'debit' => 0,
+                        'credit' => $labaPendapatanTahunLalu['laba_sesudah_pendapatan'],
+                        'notes' => "Laba Ditahan s.d Tahun Lalu - {$location->name}",
+                        'type' => 'Kredit',
+                    ]);
+                } else {
+                    EntryItems::create([
+                        'entry_date' => $entryDate,
+                        'ledger_id' => $labaDitahanTahunLalu->id,
+                        'user_id' => null,
+                        'debit' => abs($labaPendapatanTahunLalu['laba_sesudah_pendapatan']),
+                        'credit' => 0,
+                        'notes' => "Rugi Ditahan s.d Tahun Lalu - {$location->name}",
+                        'type' => 'Debit',
+                    ]);
+                }
                 $monthCode = str_pad($month, 2, '0', STR_PAD_LEFT);
                 $documentNumber = "{$year}.{$locationCode}.{$monthCode}.LR.001";
 

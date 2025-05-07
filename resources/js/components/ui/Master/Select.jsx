@@ -42,6 +42,7 @@ const SelectComponent = ({
     stylesSelect,
     required,
     onInputChange,
+    disabled,
     ...rest
 }) => {
     const errorMessage = error?.message || error;
@@ -66,6 +67,7 @@ const SelectComponent = ({
                     render={({ field: { onChange, value } }) => (
                         <Select
                             {...rest}
+                            onInputChange={onInputChange}
                             className={`${
                                 errorMessage ? " has-error" : " "
                             } appearance-none `}
@@ -112,6 +114,7 @@ const SelectComponent = ({
             )}
             <Select
                 {...rest}
+                isDisabled={disabled}
                 onInputChange={onInputChange}
                 className="react-select"
                 classNamePrefix="select"

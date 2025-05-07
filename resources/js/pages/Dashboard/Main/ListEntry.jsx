@@ -79,6 +79,12 @@ export default function ListEntry() {
         endDate,
     ]);
 
+    useEffect(() => {
+        if (isMounted) {
+            getEntries(); // Load pertama kali
+        }
+    }, []);
+
     const handlePageChange = async (page) => {
         await setPaging((prevState) => ({
             ...prevState,
@@ -140,7 +146,7 @@ export default function ListEntry() {
                                 setStartDate(event);
                                 setPaging((prevState) => ({
                                     ...prevState,
-                                    totalPage: 1,
+                                    currentPage: 1,
                                 }));
                                 handleFilterChange();
                             }}
@@ -154,7 +160,7 @@ export default function ListEntry() {
                                 setEndDate(event);
                                 setPaging((prevState) => ({
                                     ...prevState,
-                                    totalPage: 1,
+                                    currentPage: 1,
                                 }));
                                 handleFilterChange();
                             }}
@@ -213,7 +219,7 @@ export default function ListEntry() {
                                 user: item?.user?.name,
                                 debit: formatRupiah(item?.debit),
                                 credit: formatRupiah(item?.credit),
-                                created_at: dayJsFormatDate(item?.created_at),
+                                created_at: dayJsFormatDate(item?.entries_date),
                                 action: (
                                     <Button
                                         text={"Detail"}

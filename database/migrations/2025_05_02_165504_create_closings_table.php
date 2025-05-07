@@ -20,7 +20,7 @@ return new class extends Migration
             $table->uuid('user_id')->nullable();
             $table->foreign("user_id")->references("user_id")->on("users")->onDelete("set null");
             $table->string('action');
-            $table->string('notes');
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
     }

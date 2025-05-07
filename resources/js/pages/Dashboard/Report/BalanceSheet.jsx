@@ -100,6 +100,8 @@ function BalanceSheet() {
         }
     }, [filters]);
 
+    console.log(data);
+
     return (
         <Card title={"Laporan Neraca"} noborder>
             <Head title="Laporan Neraca" />

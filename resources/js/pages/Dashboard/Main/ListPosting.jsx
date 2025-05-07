@@ -113,6 +113,12 @@ export default function ListPosting() {
         }
     }, [filters]);
 
+    useEffect(() => {
+        if (isMounted) {
+            getEntries(); // Load pertama kali
+        }
+    }, []);
+
     return (
         <Card
             title={"Daftar Posting"}
@@ -138,10 +144,6 @@ export default function ListPosting() {
                             label={"Tanggal Mulai"}
                             onChange={(event) => {
                                 setStartDate(event);
-                                setPaging((prevState) => ({
-                                    ...prevState,
-                                    totalPage: 1,
-                                }));
                                 handleFilterChange();
                             }}
                         />
@@ -152,10 +154,7 @@ export default function ListPosting() {
                             label={"Tanggal Akhir"}
                             onChange={(event) => {
                                 setEndDate(event);
-                                setPaging((prevState) => ({
-                                    ...prevState,
-                                    totalPage: 1,
-                                }));
+
                                 handleFilterChange();
                             }}
                         />
@@ -214,7 +213,8 @@ export default function ListPosting() {
                                 user: item?.user?.name ?? "SYSTEM",
                                 debit: formatRupiah(item?.debit ?? 0),
                                 credit: formatRupiah(item?.credit ?? 0),
-                                created_at: dayJsFormatDate(item?.created_at),
+                                created_at: dayJsFormatDate(item?.entries_date),
+
                                 action: (
                                     <Button
                                         text={"Detail"}

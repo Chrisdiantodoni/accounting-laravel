@@ -12,7 +12,7 @@ Artisan::command('inspire', function () {
 
 Artisan::command('generate:yearly-pl-report', function () {
     $this->call(GenerateYearlyProfitAndLossReport::class);
-})->describe('Generate yearly profit and loss report')->yearlyOn(12, 31, '23:59');
+})->describe('Generate yearly profit and loss report')->yearlyOn(1, 1, '00:00');
 
 Artisan::command('generate:new-year', function () {
     $this->call(GenerateNewYear::class);

@@ -1,17 +1,24 @@
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import ModalLedger from "@/components/ui/Modal/ModalLedger";
+import SelectComponent from "@/components/ui/Master/Select";
 import Pagination from "@/components/ui/Pagination";
 import Search from "@/components/ui/Search";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
-import { dayJsFormatDate } from "@/utils/dayjs";
-import { formatRupiah } from "@/utils/formatter";
+import { dayjsFormatDateTime } from "@/utils/dayjs";
+import { yupResolver } from "@hookform/resolvers/yup";
 import { Head, router, usePage } from "@inertiajs/react";
 import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import Swal from "sweetalert2";
+import * as yup from "yup";
+
+const schema = yup.object().shape({
+    location: yup.object().nullable().required("Lokasi wajib dipilih"),
+});
 
 export default function ListCloseBook() {
-    const { filters, closings } = usePage().props;
+    const { filters, closings, auth } = usePage().props;
 
     const [search, setSearch] = useState("");
     const [isSearch, setIsSearch] = useState(false);
@@ -23,8 +30,68 @@ export default function ListCloseBook() {
         totalPage: 10,
     });
 
-    const ClosingBook = async () => {
-        await router.post(route("close.book"));
+    const {
+        handleSubmit,
+        control,
+        formState: { errors },
+    } = useForm({
+        resolver: yupResolver(schema),
+        defaultValues: {
+            location: null,
+            monthYear: "", // pastikan tidak langsung pilih Januari
+        },
+    });
+
+    const yearUser = auth?.user?.years?.find(
+        (find) => find?.pivot?.isSelected == 1,
+    )?.year;
+
+    const months = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+    ];
+
+    const ClosingBook = async (data) => {
+        Swal.fire({
+            title: "Yakin ingin tutup buku?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Ya, tutup!",
+            cancelButtonText: "Batal",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await router.post(route("close.book"), {
+                    month: data.monthYear,
+                    location_id: data.location?.value?.id,
+                });
+            }
+        });
+    };
+    const openBook = async (data) => {
+        Swal.fire({
+            title: "Yakin ingin buka buku?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Ya, buka!",
+            cancelButtonText: "Batal",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                await router.post(route("open.book"), {
+                    month: data.monthYear,
+                    location_id: data.location?.value?.id,
+                });
+            }
+        });
     };
 
     const getEntries = async () => {
@@ -98,23 +165,41 @@ export default function ListCloseBook() {
     }, [filters]);
 
     return (
-        <Card
-            title={"Daftar Tutup Buku"}
-            headerslot={
-                <div className="space-x-2">
-                    <Button
-                        icon={"material-symbols:add"}
-                        text={"Tutup Buku"}
-                        className="btn-outline-dark p-2"
-                        onClick={ClosingBook}
-                    />
-                </div>
-            }
-            noborder
-        >
-            <ModalLedger />
+        <Card title={"Daftar Tutup Buku"} noborder>
             <Head title="Daftar Tutup Buku" />
+
             <div className="space-y-6">
+                <div className="grid grid-cols-12 gap-6">
+                    <div className="lg:col-span-3 col-span-12">
+                        <SelectComponent
+                            name={"location"}
+                            form={true}
+                            control={control}
+                            error={errors.location?.message}
+                            label={"Pilih Lokasi"}
+                            className="react-select"
+                            classNamePrefix="select"
+                            options={auth.user?.locations?.map((item) => ({
+                                label: `${item?.code}-${item?.location_name}`,
+                                value: item,
+                            }))}
+                        />
+                    </div>
+                    <div className="lg:col-span-6 col-span-12 flex flex-wrap gap-4 items-end">
+                        <Button
+                            icon="material-symbols:lock"
+                            text="Tutup Buku"
+                            className="btn-outline-dark p-2"
+                            onClick={handleSubmit(ClosingBook)}
+                        />
+                        <Button
+                            icon="material-symbols:lock-open"
+                            text="Buka Buku"
+                            className="btn-dark p-2"
+                            onClick={handleSubmit(openBook)}
+                        />
+                    </div>
+                </div>
                 <div className="grid grid-cols-12 gap-6">
                     <div className="col-span-12">
                         <div className="grid grid-cols-12 gap-5">
@@ -165,18 +250,12 @@ export default function ListCloseBook() {
                                     </span>
                                 ),
                                 ...item,
+                                created_at: dayjsFormatDateTime(
+                                    item?.created_at,
+                                ),
+                                month: months[item?.month - 1],
                                 location: item?.location?.location_name,
                                 user: item?.user?.name,
-                                debit: formatRupiah(item?.debit),
-                                credit: formatRupiah(item?.credit),
-                                created_at: dayJsFormatDate(item?.created_at),
-                                action: (
-                                    <Button
-                                        text={"Detail"}
-                                        className="btn-outline-dark py-1"
-                                        link={route("show.entries", item?.id)}
-                                    />
-                                ),
                             }))}
                         />
                     </div>
@@ -208,15 +287,15 @@ const headersEntry = [
     },
     {
         title: "Lokasi",
-        key: "document_number",
+        key: "location",
     },
     {
         title: "Bulan",
-        key: "location",
+        key: "month",
     },
     {
         title: "Tahun",
-        key: "location",
+        key: "year",
     },
     {
         title: "Staff",
@@ -224,10 +303,10 @@ const headersEntry = [
     },
     {
         title: "Action",
-        key: "debit",
+        key: "action",
     },
     {
         title: "Notes",
-        key: "credit",
+        key: "notes",
     },
 ];

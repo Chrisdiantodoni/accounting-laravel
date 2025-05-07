@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ResponseFormatter;
+use App\Models\Closing;
 use App\Models\Entry;
 use App\Models\EntryItems;
 use App\Models\EntryLog;
@@ -123,11 +124,37 @@ class EntryController extends Controller
                 );
                 return redirect()->back()->withErrors($validator)->with('message',  $notification);
             }
+
             $document_number = $request->input('document_number');
             $entries_date = $request->input('entries_date');
             $debit = $request->input('debit');
             $credit = $request->input('credit');
             $notes = $request->input('notes');
+
+            $entries_date_closing = Carbon::parse($entries_date);
+
+            $lastOpenClosing = Closing::where('is_closing', true)
+                ->orderByDesc('year')
+                ->orderByDesc('month')
+                ->first();
+
+            if ($lastOpenClosing) {
+                $closingMonth = str_pad($lastOpenClosing->month, 2, '0', STR_PAD_LEFT);
+                $closingYear = $lastOpenClosing->year;
+
+                $closingDate = Carbon::createFromFormat('Y-m', "$closingYear-$closingMonth");
+                $entryDate = Carbon::createFromFormat('Y-m', $entries_date_closing->format('Y-m'));
+
+                if ($entryDate->lte($closingDate)) {
+                    $notification = array(
+                        'toast_type' => 'error',
+                        'alert_type' => 'toast',
+                        'message' => 'Tanggal transaksi tidak boleh sebelum bulan buku terakhir yang dibuka.'
+                    );
+                    return redirect()->back()->withErrors($validator)->with('message',  $notification);
+                }
+            }
+
 
             $entries_list = $request->input('entries');
 
@@ -400,20 +427,21 @@ class EntryController extends Controller
 
             $targetDocumentNumber = $documentNumber;
             $targetEntry = Entry::where('document_number', $targetDocumentNumber)->first();
-            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+
+            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-003");
             })->first();
-            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-003");
             })->first();
-            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan s.d Bulan Lalu');
+            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-002");
             })->first();
 
             if ($entryItemsLabaBulanIniDebit) {
                 $entryItemsLabaBulanIniDebit->update([
                     'debit' => $totalLabaBulanDitahan < 0 ? abs($totalLabaBulanDitahan) : 0,
-                    'credit' => $totalLabaBulanDitahan >= 0 ? $totalLabaBulanDitahan : 0,
+                    'credit' => $totalLabaBulanDitahan >= 0 ? abs($totalLabaBulanDitahan) : 0,
                 ]);
             }
 
@@ -421,7 +449,7 @@ class EntryController extends Controller
             if ($entryItemsLabaBulanLalu) {
                 $entryItemsLabaBulanLalu->update([
                     'debit' => $totalLabaBulanLalu < 0 ? abs($totalLabaBulanLalu) : 0,
-                    'credit' => $totalLabaBulanLalu >= 0 ? $totalLabaBulanLalu : 0,
+                    'credit' => $totalLabaBulanLalu >= 0 ? abs($totalLabaBulanLalu) : 0,
                 ]);
             }
 
@@ -430,7 +458,7 @@ class EntryController extends Controller
 
                 $entryItemsLabaBulanIniKredit->update([
                     'debit' => !$isLaluDebit ? abs($totalLabaBulanLalu) : 0,
-                    'credit' => $isLaluDebit ? $totalLabaBulanLalu : 0,
+                    'credit' => $isLaluDebit ? abs($totalLabaBulanLalu) : 0,
                 ]);
             }
             if ($targetEntry) {
@@ -497,15 +525,24 @@ class EntryController extends Controller
 
             $targetDocumentNumber = $documentNumber;
             $targetEntry = Entry::where('document_number', $targetDocumentNumber)->first();
-            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-003");
             })->first();
-            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-003");
             })->first();
-            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) {
-                $q->where('ledger_name', 'Laba Ditahan s.d Bulan Lalu');
+            $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) use ($locationCode) {
+                $q->where('ledger_code', "503-$locationCode-002");
             })->first();
+            // $entryItemsLabaBulanIniDebit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Debit')->whereHas('ledger', function ($q) {
+            //     $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            // })->first();
+            // $entryItemsLabaBulanIniKredit = EntryItems::where('entries_id', $targetEntry->id)->where('type', 'Kredit')->whereHas('ledger', function ($q) {
+            //     $q->where('ledger_name', 'Laba Ditahan Bulan ini');
+            // })->first();
+            // $entryItemsLabaBulanLalu = EntryItems::where('entries_id', $targetEntry->id)->whereHas('ledger', function ($q) {
+            //     $q->where('ledger_name', 'Laba Ditahan s.d Bulan Lalu');
+            // })->first();
 
             if ($entryItemsLabaBulanIniDebit) {
                 $entryItemsLabaBulanIniDebit->update([
@@ -518,7 +555,7 @@ class EntryController extends Controller
             if ($entryItemsLabaBulanLalu) {
                 $entryItemsLabaBulanLalu->update([
                     'debit' => $totalLabaBulanLalu < 0 ? abs($totalLabaBulanLalu) : 0,
-                    'credit' => $totalLabaBulanLalu >= 0 ? $totalLabaBulanLalu : 0,
+                    'credit' => $totalLabaBulanLalu >= 0 ? abs($totalLabaBulanLalu) : 0,
                 ]);
             }
 
@@ -527,7 +564,7 @@ class EntryController extends Controller
 
                 $entryItemsLabaBulanIniKredit->update([
                     'debit' => !$isLaluDebit ? abs($totalLabaBulanLalu) : 0,
-                    'credit' => $isLaluDebit ? $totalLabaBulanLalu : 0,
+                    'credit' => $isLaluDebit ? abs($totalLabaBulanLalu) : 0,
                 ]);
             }
             if ($targetEntry) {

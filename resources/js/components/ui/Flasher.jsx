@@ -1,5 +1,6 @@
 import { usePage } from "@inertiajs/react";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
 const Flasher = () => {
@@ -18,6 +19,15 @@ const Flasher = () => {
                 title: "Error",
                 text: flash.message?.message,
             });
+        } else if (flash?.message?.alert_type === "toast") {
+            const type = flash?.message?.toast_type; // "success", "error", "info", etc.
+            const message = flash?.message?.message;
+
+            if (toast[type]) {
+                toast[type](message);
+            } else {
+                toast.info(message); // fallback kalau tipe tidak dikenal
+            }
         }
     }, [flash]);
 

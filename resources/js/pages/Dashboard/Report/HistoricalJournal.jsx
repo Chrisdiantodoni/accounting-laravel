@@ -2,24 +2,42 @@ import LoaderCircle from "@/components/Loader-circle";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import SelectComponent from "@/components/ui/Master/Select";
-import Select from "@/components/ui/Select";
 import { Head, router, usePage } from "@inertiajs/react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useDebounce } from "@/hooks/useDebounce";
+import useGetLedgers from "@/hooks/useGetLedgers";
+import dayjs from "dayjs";
+import DatePicker from "@/components/ui/DatePicker";
+import Table from "@/components/ui/Table";
+import { dayJsFormatDate, dayjsFormatInputDate } from "@/utils/dayjs";
+import { formatRupiah } from "@/utils/formatter";
+import Search from "@/components/ui/Search";
 
 const schema = yup.object().shape({
-    monthYear: yup.string().required("Bulan wajib dipilih"),
     location: yup.object().nullable().required("Lokasi wajib dipilih"),
+    ledger: yup.object().nullable().required("Ledger wajib dipilih"),
 });
 
 function HistoricalJournal() {
-    const { auth } = usePage().props;
-    const [isLoading, setIsLoading] = useState(false);
-
     const {
-        register,
+        auth,
+        journals,
+        total_in_range,
+        total_before_range,
+        balance_ledger,
+    } = usePage().props;
+    const now = dayjs().format("YYYY-MM-DD");
+    const oneMonthBefore = dayjs().subtract(1, "month").format("YYYY-MM-DD");
+    const [startDate, setStartDate] = useState(oneMonthBefore || "");
+    const [endDate, setEndDate] = useState(now || "");
+    const [isLoading, setIsLoading] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [searchLedger, setSearchLedger] = useState("");
+    const [searchJournal, setSearchJournal] = useState("");
+    const {
         handleSubmit,
         control,
         formState: { errors },
@@ -27,39 +45,18 @@ function HistoricalJournal() {
         resolver: yupResolver(schema),
         defaultValues: {
             location: null,
-            monthYear: "", // pastikan tidak langsung pilih Januari
+            ledger: null,
         },
     });
 
-    const yearUser = auth?.user?.years?.find(
-        (find) => find?.pivot?.isSelected == 1,
-    )?.year;
-
-    const monthOptions = [
-        "Januari",
-        "Februari",
-        "Maret",
-        "April",
-        "Mei",
-        "Juni",
-        "Juli",
-        "Agustus",
-        "September",
-        "Oktober",
-        "November",
-        "Desember",
-    ].map((month, index) => ({
-        label: `${month} ${yearUser}`,
-        value: String(index + 1),
-    }));
-
     const getEntries = async (data) => {
         const response = await router.get(
-            route("reports.balance.sheet"),
+            route("reports.historical.journal"),
             {
                 location_id: data?.location?.value?.id,
-                year: yearUser,
-                month: data?.monthYear,
+                ledger_id: data?.ledger?.value?.id,
+                start_date: dayjsFormatInputDate(startDate),
+                end_date: dayjsFormatInputDate(endDate),
             },
             {
                 preserveState: true,
@@ -79,11 +76,30 @@ function HistoricalJournal() {
         return response;
     };
 
+    const debouncedSearch = useDebounce(searchLedger, 500);
+    const { data, isFetching } = useGetLedgers(debouncedSearch, isMenuOpen);
+    const options = data?.data?.data?.map((item) => ({
+        label: `[${item?.ledger_code}] ${item?.ledger_name}`,
+        value: item,
+    }));
+
+    const safeNumber = (val) => Number(val) || 0;
+
+    const startBalance =
+        balance_ledger +
+        safeNumber(total_before_range?.total_debit) -
+        safeNumber(total_before_range?.total_credit);
+
+    const saldoAkhir =
+        startBalance +
+        safeNumber(total_in_range?.total_debit) -
+        safeNumber(total_in_range?.total_credit);
+    console.log({ total_before_range, total_in_range, balance_ledger });
     return (
-        <Card title={"Laporan Neraca"} noborder>
-            <Head title="Laporan Neraca" />
+        <Card title={"Laporan Historical Journal"} noborder>
+            <Head title="Laporan Historical Journal" />
             <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-3">
+                <div className="lg:col-span-3 col-span-12">
                     <SelectComponent
                         name={"location"}
                         form={true}
@@ -98,14 +114,35 @@ function HistoricalJournal() {
                         }))}
                     />
                 </div>
-                <div className="col-span-3">
-                    <Select
-                        register={register}
-                        placeholder="Pilih Bulan"
-                        error={errors.monthYear?.message}
-                        name={"monthYear"}
-                        label={"Pilih Bulan"}
-                        options={monthOptions}
+                <div className="lg:col-span-3 col-span-12">
+                    <SelectComponent
+                        label={"Pilih Ledger"}
+                        options={options || []}
+                        onInputChange={(e) => setSearchLedger(e)}
+                        isLoading={isFetching}
+                        form={true}
+                        control={control}
+                        name={"ledger"}
+                        onMenuOpen={() => setIsMenuOpen(true)}
+                        onMenuClose={() => setIsMenuOpen(false)}
+                    />
+                </div>
+                <div className="lg:col-span-3 col-span-12">
+                    <DatePicker
+                        value={startDate}
+                        label={"Tanggal Mulai"}
+                        onChange={(event) => {
+                            setStartDate(event);
+                        }}
+                    />
+                </div>
+                <div className="lg:col-span-3 col-span-12">
+                    <DatePicker
+                        value={endDate}
+                        label={"Tanggal Akhir"}
+                        onChange={(event) => {
+                            setEndDate(event);
+                        }}
                     />
                 </div>
             </div>
@@ -116,15 +153,103 @@ function HistoricalJournal() {
                     onClick={handleSubmit(getEntries)}
                 />
             </div>
-            <div className="space-y-6">
+            <div className="space-y-3 mt-5">
                 {isLoading ? (
                     <>
                         <LoaderCircle />
                     </>
-                ) : (
-                    <div className="grid grid-cols-12 gap-6">
+                ) : journals?.length == 0 ? null : (
+                    <div className="grid grid-cols-12 gap-x-6 gap-y-2">
+                        <div className="col-span-6"></div>
+                        <div className="col-span-6">
+                            <Search
+                                value={searchJournal}
+                                onChange={(e) => setSearchJournal(e)}
+                                placeholder="Cari keterangan atau no. bukti..."
+                            />
+                        </div>
                         <div className="col-span-12">
-                            {/* {JSON.stringify(data)} */}
+                            <Table
+                                headers={headerHistoricalJournal}
+                                data={journals?.entry_items
+                                    ?.filter((item) => {
+                                        const search =
+                                            searchJournal.toLowerCase();
+
+                                        const note =
+                                            item?.notes?.toLowerCase() || "";
+                                        const ledgerCode =
+                                            journals?.ledger_code?.toLowerCase() ||
+                                            "";
+                                        const ledgerName =
+                                            journals?.ledger_name?.toLowerCase() ||
+                                            "";
+                                        const debit = (
+                                            item?.debit || 0
+                                        ).toString();
+                                        const credit = (
+                                            item?.credit || 0
+                                        ).toString();
+                                        const docNumber =
+                                            item?.entry?.document_number?.toLowerCase() ||
+                                            "";
+
+                                        return (
+                                            note.includes(search) ||
+                                            ledgerCode.includes(search) ||
+                                            ledgerName.includes(search) ||
+                                            debit.includes(search) ||
+                                            credit.includes(search) ||
+                                            docNumber.includes(search)
+                                        );
+                                    })
+                                    ?.map((item) => ({
+                                        ...item,
+                                        date: dayJsFormatDate(item?.entry_date),
+                                        document_number:
+                                            item?.entry?.document_number,
+                                        code: journals?.ledger_code,
+                                        ledger: journals?.ledger_name,
+                                        note: item?.notes,
+                                        debit: formatRupiah(item?.debit),
+                                        credit: formatRupiah(item?.credit),
+                                    }))}
+                            />
+                        </div>
+                        <div className="col-span-12">
+                            <hr />
+                        </div>
+                        <div className="col-span-12">
+                            <div className="space-y-1 text-sm font-semibold">
+                                <div className="grid grid-cols-[8rem_1rem_1fr]">
+                                    <span>Saldo Awal</span>
+                                    <span>:</span>
+                                    <span>{formatRupiah(startBalance)}</span>
+                                </div>
+                                <div className="grid grid-cols-[8rem_1rem_1fr]">
+                                    <span>Total Debit</span>
+                                    <span>:</span>
+                                    <span>
+                                        {formatRupiah(
+                                            total_in_range?.total_debit,
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-[8rem_1rem_1fr]">
+                                    <span>Total Kredit</span>
+                                    <span>:</span>
+                                    <span>
+                                        {formatRupiah(
+                                            total_in_range?.total_credit,
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-[8rem_1rem_1fr]">
+                                    <span>Saldo Akhir</span>
+                                    <span>:</span>
+                                    <span>{formatRupiah(saldoAkhir)}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -132,5 +257,36 @@ function HistoricalJournal() {
         </Card>
     );
 }
+
+const headerHistoricalJournal = [
+    {
+        title: "date",
+        key: "date",
+    },
+    {
+        title: "No. Bukti",
+        key: "document_number",
+    },
+    {
+        title: "Code",
+        key: "code",
+    },
+    {
+        title: "Ledger",
+        key: "ledger",
+    },
+    {
+        title: "Keterangan",
+        key: "note",
+    },
+    {
+        title: "Debit",
+        key: "debit",
+    },
+    {
+        title: "Kredit",
+        key: "credit",
+    },
+];
 
 export default HistoricalJournal;

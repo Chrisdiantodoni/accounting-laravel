@@ -120,54 +120,45 @@ class LedgerSeeder extends Seeder
             ['prefix' => 'Pendapatan Bunga Deposito', 'ledger_name' => 'Pendapatan Bunga Deposito'],
 
         ];
-        $ledger_code_counter = 1; // Untuk menghitung urutan ledger_code per prefix
-
         foreach ($ledgers as $ledger) {
-            // Menentukan child_accounts berdasarkan prefix
             $child_accounts = ChildAccount::where('child_account_name', $ledger['prefix'])->get();
 
             if ($child_accounts->isEmpty()) {
-                continue; // Jika tidak ada child_account yang ditemukan, lanjutkan ke ledger berikutnya
+                continue;
             }
 
             foreach ($child_accounts as $child_account) {
-                // Mengambil child_account_code, menghilangkan -000, dan menambahkan nomor urut
-                $base_code = str_replace('000', '', $child_account->child_account_code);
-                $ledger_code = $base_code . str_pad($ledger_code_counter, 3, '0', STR_PAD_LEFT); // Menambahkan nomor urut setelah base code
-                $ledger_code_counter++; // Increment counter setelah setiap ledger
+                $base_code = preg_replace('/000$/', '', $child_account->child_account_code);
 
-                // Jika kita beralih ke prefix yang berbeda, reset counter
-                if (isset($previous_prefix) && $previous_prefix !== $ledger['prefix']) {
-                    $ledger_code_counter = 1;
-                }
+                // Hitung jumlah ledger yang sudah dibuat untuk child_account ini
+                $existing_ledgers_count = Ledger::where('child_account_id', $child_account->id)->count();
 
-                // Menentukan ledger_name
+                // Increment index berdasarkan jumlah existing ledger
+                $ledger_number = $existing_ledgers_count + 1;
+
+                // Format kode ledger
+                $ledger_code = $base_code . str_pad($ledger_number, 3, '0', STR_PAD_LEFT);
+
                 $ledger_name = $ledger['ledger_name'];
-
-                // Tentukan saldo awal (balance), asumsikan saldo awal 0
                 $balance = 0;
-
-                // Tentukan type_start_balance: apakah Debit atau Kredit
                 $type_start_balance = ($child_account->parent_account_id % 2 == 0) ? 'Debet' : 'Kredit';
 
-                // Insert data ke tabel ledgers untuk setiap child_account yang ditemukan
                 Ledger::firstOrCreate(
-                    ['ledger_code' => $ledger_name],
-                    ([
+                    ['ledger_code' => $ledger_code],
+                    [
                         'ledger_code' => $ledger_code,
                         'ledger_name' => $ledger_name,
                         'balance' => $balance,
                         'type_start_balance' => $type_start_balance,
                         'child_account_id' => $child_account->id,
-                        'location_id' => $child_account->location_id, // Pastikan location_id sudah didefinisikan
+                        'location_id' => $child_account->location_id,
                         'created_at' => now(),
                         'updated_at' => now(),
                         'notes' => 'Initial ledger entry for ' . $ledger_name,
-                    ])
+                    ]
                 );
 
-                // Menyimpan prefix sebelumnya untuk pengecekan perubahan prefix
-                $previous_prefix = $ledger['prefix'];
+                // Stop loop jika sudah assign 1 ledger ke 1 child account
             }
         }
     }
