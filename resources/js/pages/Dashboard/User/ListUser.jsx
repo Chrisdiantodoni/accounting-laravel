@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import React from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -11,15 +12,13 @@ import Table from "@/components/ui/Table";
 import createStore from "@/context";
 import { Head, router, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
-import { useUserPermission } from "@/hooks/usePermission";
 
 export default function ListUser({ locations, years }) {
     const [paging, setPaging] = useState({
         totalPage: 10,
         currentPage: 1,
     });
-    const { hasPermission } = useUserPermission();
-    const { filters, users, auth } = usePage().props;
+    const { filters, users } = usePage().props;
 
     const [status, setStatus] = useState(null);
     const [isSearch, setIsSearch] = useState(false);
