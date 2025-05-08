@@ -13,7 +13,7 @@ import { Head, router, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 import { useUserPermission } from "@/hooks/usePermission";
 
-export default function ListUser({ locations }) {
+export default function ListUser({ locations, years }) {
     const [paging, setPaging] = useState({
         totalPage: 10,
         currentPage: 1,
@@ -141,7 +141,7 @@ export default function ListUser({ locations }) {
             }
             noborder
         >
-            <ModalAddUser locations={locations} />
+            <ModalAddUser locations={locations} years={years} />
             <Head title="List User" />
             <div className="space-y-6">
                 <div className="grid grid-cols-12 gap-6">

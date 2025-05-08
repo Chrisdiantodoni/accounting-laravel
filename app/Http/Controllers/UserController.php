@@ -51,9 +51,10 @@ class UserController extends Controller
             'page' => $page,
         ];
         $locations = Location::all();
+        $years = Year::all();
 
 
-        return Inertia::render('Dashboard/User/ListUser', compact('users', 'filters', 'locations'));
+        return Inertia::render('Dashboard/User/ListUser', compact('users', 'filters', 'locations', 'years'));
     }
 
     public function show($user_id)
