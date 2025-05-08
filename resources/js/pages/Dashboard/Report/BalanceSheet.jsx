@@ -209,8 +209,8 @@ function BalanceSheet() {
                                                                     </td>
                                                                     <td className="px-4 py-2 text-right">
                                                                         {formatRupiah(
-                                                                            akun.total_kredit -
-                                                                                akun.total_debit,
+                                                                            akun.total_debit -
+                                                                                akun?.total_kredit,
                                                                         )}
                                                                     </td>
                                                                 </tr>

@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('ledger_id');
             $table->foreign('ledger_id')->references('id')->on('ledgers')->onDelete('cascade');
-            $table->unsignedBigInteger('location_id'); // untuk melacak lokasi jika diperlukan
+            $table->uuid('location_id'); // untuk melacak lokasi jika diperlukan
+            $table->foreign('location_id')->references('id')->on('locations')->onDelete('cascade');
+
             $table->integer('year');
             $table->integer('month');
             $table->bigInteger('opening_balance');  // Saldo awal bulan ini (ambil dari closing balance bulan lalu)
@@ -29,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ledgers_end_balances');
+        Schema::dropIfExists('ledger_balances');
     }
 };

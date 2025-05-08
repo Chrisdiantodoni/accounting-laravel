@@ -22,13 +22,7 @@ const schema = yup.object().shape({
 });
 
 function HistoricalJournal() {
-    const {
-        auth,
-        journals,
-        total_in_range,
-        total_before_range,
-        balance_ledger,
-    } = usePage().props;
+    const { auth, journals, total_in_range, start_balance } = usePage().props;
     const now = dayjs().format("YYYY-MM-DD");
     const oneMonthBefore = dayjs().subtract(1, "month").format("YYYY-MM-DD");
     const [startDate, setStartDate] = useState(oneMonthBefore || "");
@@ -57,6 +51,8 @@ function HistoricalJournal() {
                 ledger_id: data?.ledger?.value?.id,
                 start_date: dayjsFormatInputDate(startDate),
                 end_date: dayjsFormatInputDate(endDate),
+                type: data?.ledger?.value?.child_account?.parent_account
+                    ?.coa_group_type,
             },
             {
                 preserveState: true,
@@ -82,19 +78,16 @@ function HistoricalJournal() {
         label: `[${item?.ledger_code}] ${item?.ledger_name}`,
         value: item,
     }));
+    console.log(data);
 
     const safeNumber = (val) => Number(val) || 0;
 
-    const startBalance =
-        balance_ledger +
-        safeNumber(total_before_range?.total_debit) -
-        safeNumber(total_before_range?.total_credit);
+    const startBalance = safeNumber(start_balance);
 
     const saldoAkhir =
         startBalance +
         safeNumber(total_in_range?.total_debit) -
         safeNumber(total_in_range?.total_credit);
-    console.log({ total_before_range, total_in_range, balance_ledger });
     return (
         <Card title={"Laporan Historical Journal"} noborder>
             <Head title="Laporan Historical Journal" />

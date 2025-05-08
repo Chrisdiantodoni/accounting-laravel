@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseFormatter;
 use App\Models\Closing;
 use App\Models\Entry;
+use App\Models\EntryItems;
+use App\Models\LedgerBalance;
 use App\Models\Location;
+use App\Services\BalanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +43,7 @@ class ClosingController extends Controller
         return ResponseFormatter::success($location,);
     }
 
-    public function closeBook(Request $request)
+    public function closeBook(Request $request, BalanceService $balanceService)
     {
         DB::beginTransaction();
 
@@ -73,11 +76,51 @@ class ClosingController extends Controller
                         'message' => 'Masih ada entry berstatus "create" di bulan ini. Harap selesaikan sebelum melakukan closing.',
                     ]);
                 }
+                $entryItems = EntryItems::whereHas('entry', function ($query) use ($month, $year, $location_id) {
+                    $query->where('location_id', $location_id)
+                        ->whereMonth('entries_date', $month)
+                        ->whereYear('entries_date', $year)
+                        ->where('status', 'posting');
+                })->get();
+
+                // Group by ledger_id
+                $grouped = $entryItems->groupBy('ledger_id');
+
+                foreach ($grouped as $ledgerId => $items) {
+                    $totalDebit = $items->sum('debit');
+                    $totalCredit = $items->sum('credit');
+
+                    // Ambil saldo akhir bulan sebelumnya
+                    $prevMonth = Carbon::createFromDate($year, $month, 1)->subMonth();
+                    $lastBalance = LedgerBalance::where('ledger_id', $ledgerId)
+                        ->where('location_id', $location_id)
+                        ->where('month', $prevMonth->month)
+                        ->where('year', $prevMonth->year)
+                        ->first();
+
+                    $opening = $lastBalance->closing_balance ?? 0;
+                    $closing = $opening + $totalDebit - $totalCredit;
+
+                    // Simpan saldo
+                    LedgerBalance::updateOrCreate(
+                        [
+                            'ledger_id' => $ledgerId,
+                            'location_id' => $location_id,
+                            'month' => $month,
+                            'year' => $year,
+                        ],
+                        [
+                            'opening_balance' => $opening,
+                            'closing_balance' => $closing,
+                        ]
+                    );
+                }
                 // Update semua entry di bulan & lokasi itu jadi is_closing = true
                 Entry::where('location_id', $location_id)
                     ->whereMonth('entries_date', $month)
                     ->whereYear('entries_date', $year)
                     ->update(['is_closing' => true]);
+
 
                 Closing::create([
                     'location_id' => $location_id,

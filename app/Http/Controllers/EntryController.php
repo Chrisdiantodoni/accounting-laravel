@@ -24,8 +24,8 @@ class EntryController extends Controller
         $limit = $request->input('limit') ?? 10;
         $page = $request->input('page');
         $user = Auth::user();
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $startDate = $request->input('start_date') ?? Carbon::now()->subMonth();
+        $endDate = $request->input('end_date') ?? Carbon::now();
         $selectedLocationId = $user->locations
             ->firstWhere('pivot.isSelected', true)?->id;
         $entries = Entry::with(['location'])->where('location_id', $selectedLocationId)
@@ -54,8 +54,8 @@ class EntryController extends Controller
         $limit = $request->input('limit') ?? 10;
         $page = $request->input('page');
         $user = Auth::user();
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $startDate = $request->input('start_date') ?? Carbon::now()->subMonth();
+        $endDate = $request->input('end_date') ?? Carbon::now();
         $selectedLocationId = $user->locations
             ->firstWhere('pivot.isSelected', true)?->id;
         $postings = Entry::with(['location'])->where('location_id', $selectedLocationId)

@@ -236,6 +236,8 @@ class ReportController extends Controller
     public function historicalJournalReports(Request $request)
     {
         try {
+            $type = $request->input('type');
+            // return ResponseFormatter::success($type);
             $ledger_id = $request->input('ledger_id');
             $location_id = $request->input('location_id');
             $start_date = $request->input('start_date');
@@ -245,10 +247,7 @@ class ReportController extends Controller
                 'total_debit' => 0,
                 'total_credit' => 0,
             ];
-            $totalBefore = [
-                'total_debit' => 0,
-                'total_credit' => 0,
-            ];
+
             $journals = [];
 
             // Hanya lakukan query kalau ada filter lengkap
@@ -261,7 +260,6 @@ class ReportController extends Controller
                     ->whereBetween('entry_date', [$start_date, $end_date]);
 
                 $totalInRange = $entriesInRange->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
-
                 // Total sebelum rentang tanggal
                 $entriesBefore = EntryItems::with(['entry' => function ($query) use ($location_id) {
                     $query->where('location_id', $location_id);
@@ -270,7 +268,6 @@ class ReportController extends Controller
                     ->where('entry_date', '<', $start_date);
 
                 $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
-
                 $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
                     $query->whereHas('entry', function ($subQuery) use ($location_id, $start_date, $end_date) {
                         $subQuery->where('location_id', $location_id)
@@ -283,6 +280,14 @@ class ReportController extends Controller
                             ->whereBetween('entries_date', [$start_date, $end_date]);
                     })
                     ->first();
+                $previousMonth = Carbon::parse($start_date)->startOfMonth()->subMonth(); // TANPA toDateString()
+
+
+                $start_balance = LedgerBalance::where('ledger_id', $ledger_id)
+                    ->where('location_id', $location_id)
+                    ->where('month', $previousMonth->month)
+                    ->where('year', $previousMonth->year)
+                    ->first();
             }
 
             $filters = [
@@ -291,19 +296,14 @@ class ReportController extends Controller
                 'start_date' => $start_date,
                 'end_date' => $end_date,
             ];
-            $balanceLedger = 0;
-            if ($journals) {
-                $balanceLedger = $journals->type_start_balance === 'Kredit'
-                    ? -1 * $journals->balance
-                    : $journals->balance;
-            }
+
 
             return Inertia::render('Dashboard/Report/HistoricalJournal', [
                 'journals' => $journals,
                 'filters' => $filters,
                 'total_in_range' => $totalInRange,
-                'total_before_range' => $totalBefore,
-                'balance_ledger' => $balanceLedger
+                'total_in_range_before' => $totalBefore,
+                'start_balance' => $type == 'Laba/Rugi' ? 0 : $start_balance->closing_balance ?? 0
             ]);
         } catch (\Exception $e) {
             return back()->with('message', ['type' => 'error', 'message' => $e->getMessage()]);
