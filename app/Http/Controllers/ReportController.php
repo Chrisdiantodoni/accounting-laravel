@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ResponseFormatter;
+use App\Models\Closing;
 use App\Models\CoaGroup;
 use App\Models\Cogs;
 use App\Models\Cost;
@@ -266,16 +267,35 @@ class ReportController extends Controller
 
 
                 $totalInRange = $entriesInRange->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
-                // Total sebelum rentang tanggal
-                $month = Carbon::parse($start_date)->month; // TANPA toDateString()
-                $year = Carbon::parse($start_date)->year; // TANPA toDateString()
-                $entriesBefore = EntryItems::with(['entry' => function ($query) use ($location_id) {
+
+                $closing = Closing::where('location_id', $location_id)
+                    ->where(function ($q) use ($start_date) {
+                        $q->whereYear('year', '<', Carbon::parse($start_date)->year)
+                            ->orWhere(function ($q2) use ($start_date) {
+                                $q2->whereYear('year', Carbon::parse($start_date)->year)
+                                    ->whereMonth('month', '<', Carbon::parse($start_date)->month);
+                            });
+                    })
+                    ->orderByDesc('year')
+                    ->orderByDesc('month')
+                    ->first();
+                if ($closing) {
+                    $startRange = Carbon::createFromDate($closing->year, $closing->month, 1)->addMonth()->startOfMonth();
+                    $endRange = Carbon::parse($start_date)->copy()->subDay();
+                } else {
+                    // Kalau belum ada closing, ambil dari awal data
+                    $startRange = Carbon::minValue();
+                    $endRange = Carbon::parse($start_date)->copy()->subDay();
+                }
+                $entriesBefore = EntryItems::whereHas('entry', function ($query) use ($location_id) {
                     $query->where('location_id', $location_id);
-                }])
+                })
                     ->where('ledger_id', $ledger_id)
-                    ->where('entry_date', '<', $start_date)
-                    ->whereMonth('entry_date', $month)
-                    ->whereYear('entry_date', $year);
+                    ->whereBetween('entry_date', [$startRange, $endRange]);
+
+                $totalBefore = $entriesBefore
+                    ->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')
+                    ->first();
 
                 $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
 
