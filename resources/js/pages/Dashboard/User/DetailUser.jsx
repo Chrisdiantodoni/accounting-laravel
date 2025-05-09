@@ -45,7 +45,7 @@ export default function DetailUser({ user, locations, years }) {
 
     const handleResetPassword = () => {
         setIsLoadingReset(true);
-        router.patch(
+        router.put(
             route("reset.password", user?.user_id),
             {},
             {
