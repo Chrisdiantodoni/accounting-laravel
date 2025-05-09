@@ -247,6 +247,11 @@ class ReportController extends Controller
                 'total_debit' => 0,
                 'total_credit' => 0,
             ];
+            $totalBefore = [
+                'total_debit' => 0,
+                'total_credit' => 0,
+            ];
+
 
             $journals = [];
 
