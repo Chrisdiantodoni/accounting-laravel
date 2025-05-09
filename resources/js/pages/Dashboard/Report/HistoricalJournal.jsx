@@ -95,7 +95,7 @@ function HistoricalJournal() {
         safeNumber(total_in_range_before?.total_credit);
 
     startBalance =
-        watch("ledger")?.child_account?.parent_account?.coa_group_type ==
+        watch("ledger")?.value?.child_account?.parent_account?.coa_group_type ==
         "Neraca"
             ? startBalance
             : 0;
