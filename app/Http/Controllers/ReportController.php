@@ -283,8 +283,11 @@ class ReportController extends Controller
                     $startRange = Carbon::createFromDate($closing->year, $closing->month, 1)->addMonth()->startOfMonth();
                     $endRange = Carbon::parse($start_date)->copy()->subDay();
                 } else {
-                    // Kalau belum ada closing, ambil dari awal data
-                    $startRange = Carbon::minValue();
+                    $firstEntryDate = EntryItems::whereHas('entry', function ($q) use ($location_id) {
+                        $q->where('location_id', $location_id);
+                    })->min('entry_date');
+
+                    $startRange = $firstEntryDate ? Carbon::parse($firstEntryDate) : Carbon::create(2000, 1, 1);
                     $endRange = Carbon::parse($start_date)->copy()->subDay();
                 }
                 $entriesBefore = EntryItems::whereHas('entry', function ($query) use ($location_id) {
