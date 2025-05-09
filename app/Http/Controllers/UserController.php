@@ -282,7 +282,8 @@ class UserController extends Controller
         try {
             $getUser = User::findOrFail($user_id);
             $getUser->update([
-                'password_reset_at' => Carbon::now()
+                'password_reset_at' => Carbon::now(),
+                'password' => Hash::make('password')
             ]);
             $notification = array(
                 'type' => 'success',
