@@ -114,6 +114,10 @@ class ProfitLossService
         foreach ($collections as $key => $items) {
             foreach ($items as $item) {
                 foreach ($item->ledgers as $ledger) {
+                    if (!isset($entry->entry) || $entry->entry->status !== 'posting') {
+                        continue; // Skip jika bukan posting
+                    }
+
                     foreach ($ledger->entry_items as $entry) {
                         $entryDate = is_string($entry->entry_date)
                             ? Carbon::parse($entry->entry_date)
