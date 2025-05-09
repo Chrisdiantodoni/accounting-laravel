@@ -40,6 +40,7 @@ function HistoricalJournal() {
     const {
         handleSubmit,
         control,
+        watch,
         formState: { errors },
     } = useForm({
         resolver: yupResolver(schema),
@@ -88,10 +89,16 @@ function HistoricalJournal() {
 
     const safeNumber = (val) => Number(val) || 0;
 
-    const startBalance =
+    let startBalance =
         safeNumber(start_balance) +
         safeNumber(total_in_range_before?.total_debit) -
         safeNumber(total_in_range_before?.total_credit);
+
+    startBalance =
+        watch("ledger")?.child_account?.parent_account?.coa_group_type ==
+        "Neraca"
+            ? startBalance
+            : 0;
 
     const saldoAkhir =
         startBalance +
