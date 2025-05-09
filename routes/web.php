@@ -29,7 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/change-location', [UserController::class, 'changeLocation'])->name('change.location');
     Route::post('/add-users', [UserController::class, 'storeUser'])->name('store.users');
     Route::put('/change-password', [UserController::class, 'changePassword'])->name('change.password');
-    Route::put('/reset-password', [UserController::class, 'resetPassword'])->name('reset.password');
+    Route::put('/reset-password/{id}', [UserController::class, 'resetPassword'])->name('reset.password');
 
     Route::prefix('list')->group(function () {
         Route::post('/entry/store', [EntryController::class, 'store'])->name('store.entries');
