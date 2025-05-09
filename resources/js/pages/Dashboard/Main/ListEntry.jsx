@@ -6,7 +6,11 @@ import Pagination from "@/components/ui/Pagination";
 import Search from "@/components/ui/Search";
 import Select from "@/components/ui/Select";
 import Table from "@/components/ui/Table";
-import { dayJsFormatDate, dayjsFormatInputDate } from "@/utils/dayjs";
+import {
+    dayJsFormatDate,
+    dayjsFormatDateTime,
+    dayjsFormatInputDate,
+} from "@/utils/dayjs";
 import { formatRupiah } from "@/utils/formatter";
 import { Head, router, usePage } from "@inertiajs/react";
 import dayjs from "dayjs";
@@ -217,6 +221,7 @@ export default function ListEntry() {
                                 ...item,
                                 location: item?.location?.location_name,
                                 user: item?.user?.name,
+                                edit: dayjsFormatDateTime(item?.edited_at),
                                 debit: formatRupiah(item?.debit),
                                 credit: formatRupiah(item?.credit),
                                 created_at: dayJsFormatDate(item?.entries_date),
@@ -266,7 +271,7 @@ const headersEntry = [
     },
     {
         title: "Tgl. Edit",
-        key: "location",
+        key: "edit",
     },
     {
         title: "User",
