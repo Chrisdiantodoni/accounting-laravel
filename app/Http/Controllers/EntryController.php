@@ -63,7 +63,7 @@ class EntryController extends Controller
             ->when($q, function ($query) use ($q) {
                 $query->where('document_number',  'like', '%' . $q . '%');
             })->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
+                $query->whereBetween('entries_date', [$startDate, $endDate]);
             })
             ->paginate($limit);
 
