@@ -95,7 +95,7 @@ class UserController extends Controller
 
                 YearByUser::create([
                     'user_id' => $user->user_id,
-                    'location_id' => $yearValue['id'],
+                    'year_id' => $yearValue['id'],
                     'isSelected' => $i === 0,
                 ]);
             }
