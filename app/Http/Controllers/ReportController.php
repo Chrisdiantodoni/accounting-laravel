@@ -264,13 +264,18 @@ class ReportController extends Controller
                     ->where('ledger_id', $ledger_id)
                     ->whereBetween('entry_date', [$start_date, $end_date]);
 
+
                 $totalInRange = $entriesInRange->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
                 // Total sebelum rentang tanggal
+                $month = Carbon::parse($start_date)->month; // TANPA toDateString()
+                $year = Carbon::parse($start_date)->year; // TANPA toDateString()
                 $entriesBefore = EntryItems::with(['entry' => function ($query) use ($location_id) {
                     $query->where('location_id', $location_id);
                 }])
                     ->where('ledger_id', $ledger_id)
-                    ->where('entry_date', '<', $start_date);
+                    ->where('entry_date', '<', $start_date)
+                    ->whereMonth('entry_date', $month)
+                    ->whereYear('entry_date', $year);
 
                 $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
                 $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
