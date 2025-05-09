@@ -22,7 +22,13 @@ const schema = yup.object().shape({
 });
 
 function HistoricalJournal() {
-    const { auth, journals, total_in_range, start_balance } = usePage().props;
+    const {
+        auth,
+        journals,
+        total_in_range,
+        start_balance,
+        total_in_range_before,
+    } = usePage().props;
     const now = dayjs().format("YYYY-MM-DD");
     const oneMonthBefore = dayjs().subtract(1, "month").format("YYYY-MM-DD");
     const [startDate, setStartDate] = useState(oneMonthBefore || "");
@@ -82,7 +88,10 @@ function HistoricalJournal() {
 
     const safeNumber = (val) => Number(val) || 0;
 
-    const startBalance = safeNumber(start_balance);
+    const startBalance =
+        safeNumber(start_balance) +
+        safeNumber(total_in_range_before?.total_debit) -
+        safeNumber(total_in_range_before?.total_credit);
 
     const saldoAkhir =
         startBalance +

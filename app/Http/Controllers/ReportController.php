@@ -278,6 +278,7 @@ class ReportController extends Controller
                     ->whereYear('entry_date', $year);
 
                 $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
+
                 $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
                     $query->whereHas('entry', function ($subQuery) use ($location_id, $start_date, $end_date) {
                         $subQuery->where('location_id', $location_id)
