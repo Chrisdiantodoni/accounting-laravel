@@ -100,7 +100,13 @@ function BalanceSheet() {
         }
     }, [filters]);
 
-    console.log(data);
+    const calculateBaseCategory = (category, totalDebit, totalCredit) => {
+        if (category == "EKUITAS") {
+            return totalCredit - totalDebit;
+        } else {
+            return (totalDebit = totalCredit);
+        }
+    };
 
     return (
         <Card title={"Laporan Neraca"} noborder>
@@ -209,8 +215,11 @@ function BalanceSheet() {
                                                                     </td>
                                                                     <td className="px-4 py-2 text-right">
                                                                         {formatRupiah(
-                                                                            akun.total_debit -
+                                                                            calculateBaseCategory(
+                                                                                category,
+                                                                                akun?.total_debit,
                                                                                 akun?.total_kredit,
+                                                                            ),
                                                                         )}
                                                                     </td>
                                                                 </tr>
