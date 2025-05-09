@@ -142,7 +142,7 @@ const ModalLedger = () => {
                         value={data.child_account}
                         placeholder="Kode Anak"
                         error={errors.child_account_id}
-                        disabled
+                        disabled={modalItem?.id ? true : false}
                     />
                 </div>
 
@@ -168,7 +168,7 @@ const ModalLedger = () => {
                         onChange={(e) =>
                             setData("ledger_code_prefix", e.target.value)
                         }
-                        disabled={true}
+                        disabled={modalItem?.id ? true : false}
                         error={errors.ledger_code}
                     />
                 </div>
