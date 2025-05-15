@@ -37,6 +37,7 @@ function HistoricalJournal() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [searchLedger, setSearchLedger] = useState("");
     const [searchJournal, setSearchJournal] = useState("");
+    console.log(journals);
     const {
         handleSubmit,
         control,
@@ -51,6 +52,7 @@ function HistoricalJournal() {
     });
 
     const getEntries = async (data) => {
+        console.log({ data });
         const response = await router.get(
             route("reports.historical.journal"),
             {
@@ -81,11 +83,17 @@ function HistoricalJournal() {
 
     const debouncedSearch = useDebounce(searchLedger, 500);
     const { data, isFetching } = useGetLedgers(debouncedSearch, isMenuOpen);
-    const options = data?.data?.data?.map((item) => ({
+    const options = [
+        {
+            ledger_code: "000",
+            ledger_name: "All Ledgers",
+            id: "000",
+        },
+        ...(data?.data?.data ?? []),
+    ]?.map((item) => ({
         label: `[${item?.ledger_code}] ${item?.ledger_name}`,
         value: item,
     }));
-    console.log(data);
 
     const safeNumber = (val) => Number(val) || 0;
 
@@ -177,54 +185,112 @@ function HistoricalJournal() {
                                 placeholder="Cari keterangan atau no. bukti..."
                             />
                         </div>
-                        <div className="col-span-12">
-                            <Table
-                                headers={headerHistoricalJournal}
-                                data={journals?.entry_items
-                                    ?.filter((item) => {
-                                        const search =
-                                            searchJournal.toLowerCase();
+                        {watch("ledger")?.value?.id == "000" &&
+                        Array.isArray(journals) ? (
+                            <div className="col-span-12">
+                                <Table
+                                    headers={headerHistoricalJournal}
+                                    data={(journals || [])
+                                        ?.filter((item) => {
+                                            const search =
+                                                searchJournal.toLowerCase();
 
-                                        const note =
-                                            item?.notes?.toLowerCase() || "";
-                                        const ledgerCode =
-                                            journals?.ledger_code?.toLowerCase() ||
-                                            "";
-                                        const ledgerName =
-                                            journals?.ledger_name?.toLowerCase() ||
-                                            "";
-                                        const debit = (
-                                            item?.debit || 0
-                                        ).toString();
-                                        const credit = (
-                                            item?.credit || 0
-                                        ).toString();
-                                        const docNumber =
-                                            item?.entry?.document_number?.toLowerCase() ||
-                                            "";
+                                            const note =
+                                                item?.notes?.toLowerCase() ||
+                                                "";
+                                            const ledgerCode =
+                                                journals?.ledger?.ledger_code?.toLowerCase() ||
+                                                "";
+                                            const ledgerName =
+                                                journals?.ledger?.ledger_name?.toLowerCase() ||
+                                                "";
+                                            const debit = (
+                                                item?.debit || 0
+                                            ).toString();
+                                            const credit = (
+                                                item?.credit || 0
+                                            ).toString();
+                                            const docNumber =
+                                                item?.entry?.document_number?.toLowerCase() ||
+                                                "";
 
-                                        return (
-                                            note.includes(search) ||
-                                            ledgerCode.includes(search) ||
-                                            ledgerName.includes(search) ||
-                                            debit.includes(search) ||
-                                            credit.includes(search) ||
-                                            docNumber.includes(search)
-                                        );
-                                    })
-                                    ?.map((item) => ({
-                                        ...item,
-                                        date: dayJsFormatDate(item?.entry_date),
-                                        document_number:
-                                            item?.entry?.document_number,
-                                        code: journals?.ledger_code,
-                                        ledger: journals?.ledger_name,
-                                        note: item?.notes,
-                                        debit: formatRupiah(item?.debit),
-                                        credit: formatRupiah(item?.credit),
-                                    }))}
-                            />
-                        </div>
+                                            return (
+                                                note.includes(search) ||
+                                                ledgerCode.includes(search) ||
+                                                ledgerName.includes(search) ||
+                                                debit.includes(search) ||
+                                                credit.includes(search) ||
+                                                docNumber.includes(search)
+                                            );
+                                        })
+                                        ?.map((item) => ({
+                                            ...item,
+                                            date: dayJsFormatDate(
+                                                item?.entry_date,
+                                            ),
+                                            document_number:
+                                                item?.entry?.document_number,
+                                            code: item?.ledger?.ledger_code,
+                                            ledger: item?.ledger?.ledger_name,
+                                            note: item?.notes,
+                                            debit: formatRupiah(item?.debit),
+                                            credit: formatRupiah(item?.credit),
+                                        }))}
+                                />
+                            </div>
+                        ) : (
+                            <div className="col-span-12">
+                                <Table
+                                    headers={headerHistoricalJournal}
+                                    data={journals?.entry_items
+                                        ?.filter((item) => {
+                                            const search =
+                                                searchJournal.toLowerCase();
+
+                                            const note =
+                                                item?.notes?.toLowerCase() ||
+                                                "";
+                                            const ledgerCode =
+                                                journals?.ledger_code?.toLowerCase() ||
+                                                "";
+                                            const ledgerName =
+                                                journals?.ledger_name?.toLowerCase() ||
+                                                "";
+                                            const debit = (
+                                                item?.debit || 0
+                                            ).toString();
+                                            const credit = (
+                                                item?.credit || 0
+                                            ).toString();
+                                            const docNumber =
+                                                item?.entry?.document_number?.toLowerCase() ||
+                                                "";
+
+                                            return (
+                                                note.includes(search) ||
+                                                ledgerCode.includes(search) ||
+                                                ledgerName.includes(search) ||
+                                                debit.includes(search) ||
+                                                credit.includes(search) ||
+                                                docNumber.includes(search)
+                                            );
+                                        })
+                                        ?.map((item) => ({
+                                            ...item,
+                                            date: dayJsFormatDate(
+                                                item?.entry_date,
+                                            ),
+                                            document_number:
+                                                item?.entry?.document_number,
+                                            code: journals?.ledger_code,
+                                            ledger: journals?.ledger_name,
+                                            note: item?.notes,
+                                            debit: formatRupiah(item?.debit),
+                                            credit: formatRupiah(item?.credit),
+                                        }))}
+                                />
+                            </div>
+                        )}
                         <div className="col-span-12">
                             <hr />
                         </div>

@@ -261,10 +261,14 @@ class ReportController extends Controller
                 // Total debit & kredit dalam rentang tanggal
                 $entriesInRange = EntryItems::with(['entry' => function ($query) use ($location_id) {
                     $query->where('location_id', $location_id);
-                }])
-                    ->where('ledger_id', $ledger_id)
+                }])->whereHas('entry', function ($query) use ($location_id) {
+                    $query->where('location_id', $location_id);
+                })
+                    ->when($ledger_id !== '000', function ($query) use ($ledger_id) {
+                        return $query->where('ledger_id', $ledger_id);
+                    })
                     ->whereBetween('entry_date', [$start_date, $end_date]);
-
+                // return ResponseFormatter::success($entriesInRange->get());
 
                 $totalInRange = $entriesInRange->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
 
@@ -293,7 +297,9 @@ class ReportController extends Controller
                 $entriesBefore = EntryItems::whereHas('entry', function ($query) use ($location_id) {
                     $query->where('location_id', $location_id);
                 })
-                    ->where('ledger_id', $ledger_id)
+                    ->when($ledger_id !== '000', function ($query) use ($ledger_id) {
+                        return $query->where('ledger_id', $ledger_id);
+                    })
                     ->whereBetween('entry_date', [$startRange, $endRange]);
 
                 $totalBefore = $entriesBefore
@@ -302,18 +308,30 @@ class ReportController extends Controller
 
                 $totalBefore = $entriesBefore->selectRaw('SUM(debit) as total_debit, SUM(credit) as total_credit')->first();
 
-                $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
-                    $query->whereHas('entry', function ($subQuery) use ($location_id, $start_date, $end_date) {
-                        $subQuery->where('location_id', $location_id)
-                            ->whereBetween('entries_date', [$start_date, $end_date]);
-                    });
-                }, 'entry_items.entry'])
-                    ->where('id', $ledger_id)
-                    ->whereHas('entry_items.entry', function ($query) use ($location_id, $start_date, $end_date) {
+                if ($ledger_id == '000') {
+                    $journals = EntryItems::with(['entry' => function ($query) use ($location_id, $start_date, $end_date) {
                         $query->where('location_id', $location_id)
                             ->whereBetween('entries_date', [$start_date, $end_date]);
-                    })
-                    ->first();
+                    }, 'ledger'])
+                        ->whereHas('entry', function ($query) use ($location_id, $start_date, $end_date) {
+                            $query->where('location_id', $location_id)
+                                ->whereBetween('entries_date', [$start_date, $end_date]);
+                        })
+                        ->get();
+                } else {
+                    $journals = Ledger::with(['entry_items' => function ($query) use ($location_id, $start_date, $end_date) {
+                        $query->whereHas('entry', function ($subQuery) use ($location_id, $start_date, $end_date) {
+                            $subQuery->where('location_id', $location_id)
+                                ->whereBetween('entries_date', [$start_date, $end_date]);
+                        });
+                    }, 'entry_items.entry'])
+                        ->where('id', $ledger_id)
+                        ->whereHas('entry_items.entry', function ($query) use ($location_id, $start_date, $end_date) {
+                            $query->where('location_id', $location_id)
+                                ->whereBetween('entries_date', [$start_date, $end_date]);
+                        })
+                        ->first();
+                }
                 $previousMonth = Carbon::parse($start_date)->startOfMonth()->subMonth(); // TANPA toDateString()
 
 
